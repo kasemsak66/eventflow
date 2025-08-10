@@ -1,0 +1,19 @@
+{% extends 'home/base.html' %}
+
+{% block title %}โปรไฟล์ของฉัน{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-[#DBE2EF] shadow-md rounded-lg p-6 mt-10">
+  <h2 class="text-2xl text-center font-bold text-[#112D4E] mb-6">โปรไฟล์ของฉัน</h2>
+
+  <p class="mb-2"><strong>อีเมล:</strong> {{ user.email }}</p>
+  <p class="mb-2"><strong>ชื่อ:</strong> {{ user.first_name }}</p>
+  <p class="mb-2"><strong>นามสกุล:</strong> {{ user.last_name }}</p>
+  <p class="mb-2"><strong>เบอร์โทรศัพท์:</strong> {{ user.phone_num }}</p>
+  <p class="mb-4"><strong>วันเกิด:</strong> {{ user.dob }}</p>
+
+  <a href="{% url 'profile_edit' %}" class="inline-block bg-[#3F72AF] hover:bg-[#112D4E] text-white font-bold py-2 px-4 rounded">
+    แก้ไขข้อมูล
+  </a>
+</div>
+{% endblock %}

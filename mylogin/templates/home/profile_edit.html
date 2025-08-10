@@ -1,0 +1,43 @@
+{% extends 'home/base.html' %}
+
+{% block title %}แก้ไขโปรไฟล์{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-[#DBE2EF] shadow-md rounded-lg p-6 mt-10">
+  <h2 class="text-2xl text-center font-bold text-[#112D4E] mb-6">แก้ไขโปรไฟล์</h2>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="mb-4">
+      <label class="block text-[#112D4E] font-bold mb-1">ชื่อจริง</label>
+      {{ form.first_name }}
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-[#112D4E] font-bold mb-1">นามสกุล</label>
+      {{ form.last_name }}
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-[#112D4E] font-bold mb-1">เบอร์โทรศัพท์</label>
+      {{ form.phone_num }}
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-[#112D4E] font-bold mb-1">วันเกิด</label>
+      {{ form.dob }}
+    </div>
+
+    <a href="{% url 'change_password' %}" class="block text-center mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
+  เปลี่ยนรหัสผ่าน
+</a>
+
+    <button type="submit" class="bg-[#3F72AF] hover:bg-[#112D4E] text-white font-bold py-2 px-4 rounded">
+      บันทึกข้อมูล
+    </button>
+  </form>
+
+  <a href="{% url 'profile' %}" class="block text-center mt-4 text-blue-600 hover:underline">ย้อนกลับ</a>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'home/base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="flex justify-center">
+  <div class="bg-[#dbe2ef] p-8 rounded shadow-md w-full max-w-md">
+    <h2 class="text-2xl font-bold text-[#112d4e] mb-6 text-center">เข้าสู่ระบบ</h2>
+    <form method="POST">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="mb-4">
+          <label class="block text-[#112d4e] mb-1 font-semibold">{{ field.label }}</label>
+          {{ field }}
+        </div>
+      {% endfor %}
+      <button type="submit" class="w-full bg-[#3f72af] hover:bg-[#112d4e] text-white py-2 px-4 rounded mt-4">Login</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
