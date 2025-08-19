@@ -41,34 +41,65 @@ class CustomUser(AbstractUser):
         return self.email
     
 
-class Venue(models.Model): # เพิ่ม Extra AMENITY , เพิ่ม table amenties ,
-    AMENITY_CHOICES = [
-    ('wifi', 'Wi-Fi อินเทอร์เน็ต'),
-    ('parking', 'ที่จอดรถ'),
-    ('equipment', 'อุปกรณ์กีฬา'),
-    ('sound_system', 'ระบบเสียง / ไมโครโฟน'),
-    ('projector', 'โปรเจกเตอร์ / หน้าจอ'),
-    ('air_conditioning', 'เครื่องปรับอากาศ'),
-    ('seating', 'เก้าอี้ / โต๊ะ'),
-    ('drinking_water','เครื่องกดน้ำ'),
-    ('first_aid', 'ชุดปฐมพยาบาล'),
-    ('cctv', 'กล้องวงจรปิด / ระบบรักษาความปลอดภัย')
-]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    venue_name = models.CharField(max_length=100)
-    description = models.CharField(max_length=200)
-    amenities = MultiSelectField(choices=AMENITY_CHOICES)
-    is_active = models.BooleanField(default=True)
-    time_open = models.TimeField()
-    time_closed = models.TimeField()
+class Venue(models.Model):
+    venue_id = models.AutoField(primary_key=True)  # PK ชัดเจน
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    address = models.CharField(max_length=300, blank=True)
+    price_per_day = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    extra_amenities = models.TextField(blank=True)
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='venues')
 
     def __str__(self):
-        return self.venue_name
+        return self.name
+
+    @property
+    def cover_image_url(self):
+        first = self.images.order_by('order', 'id').first()
+        return first.image.url if first else None
+
+
+class VenueAmenity(models.Model):
+    venue = models.OneToOneField(
+        Venue,
+        on_delete=models.CASCADE,
+        primary_key=True,     # ใช้ venue_id เป็น PK
+        db_column='venue_id'
+    )
+    wifi = models.BooleanField(default=False)
+    parking = models.BooleanField(default=False)
+    equipment = models.BooleanField(default=False)
+    sound_system = models.BooleanField(default=False)
+    projector = models.BooleanField(default=False)
+    air_conditioning = models.BooleanField(default=False)
+    seating = models.BooleanField(default=False)
+    drinking_water = models.BooleanField(default=False)
+    first_aid = models.BooleanField(default=False)
+    cctv = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Amenities for {self.venue.name}"
+
 
 class VenueImage(models.Model):
-    venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name='images')
+    venue = models.ForeignKey(
+        Venue,
+        on_delete=models.CASCADE,
+        related_name='images',
+        db_column='venue_id'
+    )
     image = models.ImageField(upload_to='venue_images/')
+    order = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['order', 'id']
 
     def __str__(self):
-        return f"Image of {self.venue.venue_name}"
+        return f"Image of {self.venue.name} (order {self.order})"
+    
+    

@@ -8,50 +8,66 @@
 </head>
 <body class="bg-[#f9f7f7] min-h-screen">
 
-  <nav class="bg-[#112d4e] text-[#f9f7f7] p-4 flex justify-between items-center">
-  <div class="text-xl font-bold">Eventflow</div>
+  <nav class="bg-[#112d4e] text-[#f9f7f7] p-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
 
-  <div class="flex items-center space-x-4">
+      <!-- Brand -->
+      <div class="text-xl font-bold flex items-center gap-4">
+        <span>Eventflow</span>
 
-    {% if user.is_authenticated %}
-      <a href="{% url 'profile' %}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
-        โปรไฟล์
-      </a>
-      <form method="post" action="{% url 'logout' %}">
-          {% csrf_token %}
-          <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+        <!-- Actions after brand (show only when logged in) -->
+        {% if user.is_authenticated %}
+        <div class="flex items-center gap-2">
+          <a href="{% url 'venue_list' %}"
+             class="bg-[#3f72af] hover:bg-[#2f5d97] text-white px-3 py-1 rounded transition">
+            รายการสถานที่
+          </a>
+          <a href="{% url 'venue_create' %}"
+             class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded transition">
+            เพิ่มสถานที่
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Right side -->
+      <div class="flex items-center space-x-4">
+        {% if user.is_authenticated %}
+          <a href="{% url 'profile' %}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
+            โปรไฟล์
+          </a>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
               ออกจากระบบ
-          </button>
-      </form>
+            </button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="hover:text-[#3f72af]">เข้าสู่ระบบ</a>
+          <a href="{% url 'register' %}" class="hover:text-[#3f72af]">สมัครสมาชิก</a>
+        {% endif %}
+      </div>
 
-    {% else %}
-      <a href="{% url 'login' %}" class="hover:text-[#3f72af]">เข้าสู่ระบบ</a>
-      <a href="{% url 'register' %}" class="hover:text-[#3f72af]">สมัครสมาชิก</a>
+    </div>
+  </nav>
+
+  <!-- Flash messages -->
+  <div class="p-4 max-w-lg mx-auto">
+    {% if messages %}
+      {% for message in messages %}
+        <div 
+          class="rounded p-2 mb-4 text-center 
+                 {% if 'success' in message.tags %} text-green-700 bg-green-200
+                 {% elif 'error' in message.tags %} text-red-700 bg-red-200
+                 {% elif 'warning' in message.tags %} text-yellow-700 bg-yellow-200
+                 {% else %} text-blue-700 bg-blue-200 {% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
     {% endif %}
   </div>
-</nav>
 
   <!-- Main Content -->
-   
-   <div class="p-4 max-w-lg mx-auto">
-  {% if messages %}
-  {% for message in messages %}
-    <div 
-      class="rounded p-2 mb-4 text-center 
-             {% if 'success' in message.tags %}
-               text-green-700 bg-green-200
-             {% elif 'error' in message.tags %}
-               text-red-700 bg-red-200
-             {% elif 'warning' in message.tags %}
-               text-yellow-700 bg-yellow-200
-             {% else %}
-               text-blue-700 bg-blue-200
-             {% endif %}">
-      {{ message }}
-    </div>
-  {% endfor %}
-  {% endif %}
-</div>
   <div class="p-6">
     {% block content %}{% endblock %}
   </div>

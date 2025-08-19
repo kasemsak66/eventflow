@@ -1,0 +1,89 @@
+{% extends 'home/base.html' %}
+
+{% block title %}{{ venue.name }} · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+  <!-- รูปภาพอยู่ด้านบนสุด -->
+  <a href="{% url 'venue_list' %}" class="text-sm text-[#3f72af] hover:underline">← กลับ</a>
+
+  <div class="mt-3 bg-white rounded-2xl shadow overflow-hidden">
+    
+    <!-- ✅ รูปภาพแบบ Carousel -->
+    {% if images %}
+      <div x-data="{ current: 0 }" class="relative aspect-[16/9] bg-gray-100">
+        {% for img in images %}
+          <img 
+            src="{{ img.image.url }}" 
+            alt="รูปที่ {{ forloop.counter }}"
+            class="absolute inset-0 w-full h-full object-cover transition duration-300"
+            x-show="current === {{ forloop.counter0 }}"
+            x-transition:enter="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="opacity-100"
+            x-transition:leave-end="opacity-0"
+          />
+        {% endfor %}
+
+        {% if images|length > 1 %}
+          <!-- ปุ่มเลื่อนซ้าย -->
+          <button 
+            @click="current = (current - 1 + {{ images|length }}) % {{ images|length }}"
+            class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-700 rounded-full p-1 shadow"
+          >←</button>
+
+          <!-- ปุ่มเลื่อนขวา -->
+          <button 
+            @click="current = (current + 1) % {{ images|length }}"
+            class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-gray-700 rounded-full p-1 shadow"
+          >→</button>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="aspect-[16/9] bg-gray-100 flex items-center justify-center text-gray-500">ยังไม่มีรูปภาพ</div>
+    {% endif %}
+
+    <!-- ✅ รายละเอียดสถานที่ -->
+    <div class="p-6">
+      <div class="flex items-start justify-between gap-6 flex-col md:flex-row">
+        <div class="flex-1">
+          <h1 class="text-2xl font-bold text-[#112d4e]">{{ venue.name }}</h1>
+          <p class="mt-2 text-gray-700 whitespace-pre-line">{{ venue.description }}</p>
+          <div class="mt-4 space-y-1 text-sm text-gray-600">
+            <p><span class="font-semibold text-[#112d4e]">ที่อยู่:</span> {{ venue.address }}</p>
+            <p><span class="font-semibold text-[#112d4e]">ราคา/วัน:</span> {{ venue.price_per_day }}</p>
+          </div>
+        </div>
+
+        {% if request.user == venue.owner %}
+        <div class="flex items-center gap-2">
+          <a href="{% url 'venue_update' venue.pk %}" class="px-4 py-2 rounded-xl bg-[#3f72af] hover:bg-[#2f5d97] text-white">แก้ไข</a>
+          <a href="{% url 'venue_delete' venue.pk %}" class="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white">ลบ</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- ✅ สิ่งอำนวยความสะดวก -->
+      <h3 class="mt-6 text-lg font-semibold text-[#112d4e]">สิ่งอำนวยความสะดวก</h3>
+      {% with a=venue.venueamenity %}
+      <ul class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-gray-700 list-disc list-inside">
+        {% if a.wifi %}<li>Wi-Fi อินเทอร์เน็ต</li>{% endif %}
+        {% if a.parking %}<li>ที่จอดรถ</li>{% endif %}
+        {% if a.equipment %}<li>อุปกรณ์กีฬา</li>{% endif %}
+        {% if a.sound_system %}<li>ระบบเสียง / ไมโครโฟน</li>{% endif %}
+        {% if a.projector %}<li>โปรเจกเตอร์ / หน้าจอ</li>{% endif %}
+        {% if a.air_conditioning %}<li>เครื่องปรับอากาศ</li>{% endif %}
+        {% if a.seating %}<li>เก้าอี้ / โต๊ะ</li>{% endif %}
+        {% if a.drinking_water %}<li>เครื่องกดน้ำ</li>{% endif %}
+        {% if a.first_aid %}<li>ชุดปฐมพยาบาล</li>{% endif %}
+        {% if a.cctv %}<li>กล้องวงจรปิด / ระบบรักษาความปลอดภัย</li>{% endif %}
+      </ul>
+      {% endwith %}
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Alpine.js สำหรับ Carousel -->
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}

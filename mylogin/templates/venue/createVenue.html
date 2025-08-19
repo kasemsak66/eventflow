@@ -1,0 +1,119 @@
+{% extends 'home/base.html' %}
+
+{% block title %}เพิ่มสถานที่ใหม่ · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4">
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-[#112d4e]">เพิ่มสถานที่ใหม่</h1>
+    <a href="{% url 'venue_list' %}" class="text-sm text-[#3f72af] hover:underline">← กลับไปยังรายการ</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-8">
+    {% csrf_token %}
+
+    <!-- ข้อมูลสถานที่ -->
+    <section class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold text-[#112d4e] mb-4">ข้อมูลสถานที่</h2>
+      {% if form.non_field_errors %}
+        <div class="mb-4 rounded-lg bg-red-100 text-red-700 p-3">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div class="flex flex-col space-y-4">
+        {% for field in form %}
+          {% if field.name != "extra_amenities" %}
+            <div>
+              <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                {{ field.label }}
+              </label>
+              {{ field }}
+              {% if field.errors %}
+                <p class="text-sm text-red-600 mt-1">{{ field.errors|striptags }}</p>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- สิ่งอำนวยความสะดวก -->
+    <section class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold text-[#112d4e] mb-4">สิ่งอำนวยความสะดวก</h2>
+      {% if amenity_form.non_field_errors %}
+        <div class="mb-4 rounded-lg bg-red-100 text-red-700 p-3">{{ amenity_form.non_field_errors }}</div>
+      {% endif %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for field in amenity_form %}
+          <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+              {{ field.label }}
+            </label>
+            {{ field }}
+            {% if field.errors %}
+              <p class="text-sm text-red-600 mt-1">{{ field.errors|striptags }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- สิ่งอำนวยความสะดวกเพิ่มเติม -->
+    <section class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-lg font-semibold text-[#112d4e] mb-4">สิ่งอำนวยความสะดวกเพิ่มเติม</h2>
+      <div class="flex flex-col space-y-4">
+        <div>
+          <label for="{{ form.extra_amenities.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+            {{ form.extra_amenities.label }}
+          </label>
+          {{ form.extra_amenities }}
+          {% if form.extra_amenities.errors %}
+            <p class="text-sm text-red-600 mt-1">{{ form.extra_amenities.errors|striptags }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- รูปภาพ -->
+    <section class="bg-white rounded-2xl shadow p-6">
+      <div class="flex items-center gap-3 mb-2">
+        <h2 class="text-lg font-semibold text-[#112d4e]">รูปภาพ</h2>
+        <span class="text-sm text-gray-500">อัปโหลดได้สูงสุด 5 รูป</span>
+      </div>
+
+      {{ image_formset.management_form }}
+      {% if image_formset.non_form_errors %}
+        <div class="mb-4 rounded-lg bg-red-100 text-red-700 p-3">{{ image_formset.non_form_errors }}</div>
+      {% endif %}
+
+      <div class="flex flex-col space-y-4">
+        {% for f in image_formset.forms %}
+          <div class="rounded-xl border border-gray-200 p-4 bg-gray-50">
+            {% if f.non_field_errors %}
+              <div class="mb-2 rounded bg-red-100 text-red-700 p-2">{{ f.non_field_errors }}</div>
+            {% endif %}
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ไฟล์รูป</label>
+              {{ f.image }}
+              {% if f.image.errors %}
+                <p class="text-sm text-red-600 mt-1">{{ f.image.errors|striptags }}</p>
+              {% endif %}
+            </div>
+            {% if f.instance.pk %}
+              <img src="{{ f.instance.image.url }}" alt="" class="mt-3 h-28 w-full rounded-md object-cover" />
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ปุ่ม -->
+    <div class="flex items-center gap-3 pt-2">
+      <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl shadow">
+        💾 บันทึก
+      </button>
+      <a href="{% url 'venue_list' %}" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">
+        ❌ ยกเลิก
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'home/base.html' %}
+
+{% block title %}สถานที่ทั้งหมด · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="mb-4 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-[#112d4e]">สถานที่ทั้งหมด</h1>
+    <a href="{% url 'venue_create' %}" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl">+ เพิ่มสถานที่</a>
+  </div>
+
+  {% if venues %}
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {% for v in venues %}
+        <a href="{% url 'venue_detail' v.pk %}" class="group block">
+          <div class="bg-white rounded-2xl shadow hover:shadow-md transition overflow-hidden">
+            <div class="aspect-[16/9] bg-gray-100">
+              {% if v.cover_image_url %}
+                <img src="{{ v.cover_image_url }}" alt="{{ v.name }}" class="w-full h-full object-cover" />
+              {% else %}
+                <div class="w-full h-full flex items-center justify-center text-gray-400">ไม่มีรูป</div>
+              {% endif %}
+            </div>
+            <div class="p-4">
+              <h3 class="font-semibold text-[#112d4e] group-hover:text-[#3f72af]">{{ v.name }}</h3>
+              <p class="text-sm text-gray-600 truncate">{{ v.address }}</p>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-white rounded-2xl shadow p-6 text-center text-gray-600">ยังไม่มีสถานที่</div>
+  {% endif %}
+</div>
+{% endblock %}

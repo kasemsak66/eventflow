@@ -1,12 +1,16 @@
 from django.contrib.auth import authenticate, login as auth_login
+from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, render
-from mylogin.forms import CustomUserCreateForm, CustomUserLoginForm, CustomUserUpdateForm
-from mylogin.models import CustomUser
+from django.urls import reverse_lazy
+from mylogin.forms import CustomUserCreateForm, CustomUserLoginForm, CustomUserUpdateForm, VenueAmenityForm, VenueForm, VenueImageFormSet
+from mylogin.models import CustomUser, Venue, VenueAmenity
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.db import transaction
 
 
 
@@ -103,4 +107,122 @@ def profile_edit(request):
     return render(request, 'home/profile_edit.html', {'form': form})
 
 
+class VenueListView(ListView):
+    model = Venue
+    template_name = 'venue/listVenue.html'
+    context_object_name = 'venues'
+    paginate_by = 10
 
+
+class VenueDetailView(DetailView):
+    model = Venue
+    template_name = 'venue/detailVenue.html'
+    context_object_name = 'venue'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["images"] = self.object.images.all()[:5]  # แสดงไม่เกิน 5 รูป
+        return ctx
+
+
+class VenueCreateView(CreateView):
+    model = Venue
+    form_class = VenueForm
+    template_name = 'venue/createVenue.html'
+    success_url = reverse_lazy('venue_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["amenity_form"] = kwargs.get("amenity_form") or VenueAmenityForm()
+        ctx["image_formset"] = kwargs.get("image_formset") or VenueImageFormSet()
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        form = self.get_form()
+        amenity_form = VenueAmenityForm(request.POST)
+        image_formset = VenueImageFormSet(request.POST, request.FILES)
+
+        print("form valid:", form.is_valid())
+        print("amenity_form valid:", amenity_form.is_valid())
+        print("image_formset valid:", image_formset.is_valid())
+
+        print("form.errors:", form.errors)
+        print("amenity_form.errors:", amenity_form.errors)
+        print("image_formset.errors:", image_formset.errors)
+
+        if form.is_valid() and amenity_form.is_valid() and image_formset.is_valid():
+            with transaction.atomic():
+                venue = form.save(commit=False)
+                venue.owner = request.user  # ✅ กำหนด owner ก่อนบันทึก
+                venue.save()
+
+                # บันทึกสิ่งอำนวยความสะดวก
+                amenity = amenity_form.save(commit=False)
+                amenity.venue = venue
+                amenity.save()
+
+                # ผูก image_formset กับ venue ที่เพิ่งสร้าง แล้ว save
+                image_formset.instance = venue
+                image_formset.save()
+
+            return redirect(self.success_url)
+
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            amenity_form=amenity_form,
+            image_formset=image_formset
+        ))
+
+class VenueUpdateView(UpdateView):
+    model = Venue
+    form_class = VenueForm
+    template_name = 'venue/updateVenue.html'
+    success_url = reverse_lazy('venue_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        venue = self.object
+        amenity, _ = VenueAmenity.objects.get_or_create(venue=venue)
+        ctx["amenity_form"] = kwargs.get("amenity_form") or VenueAmenityForm(instance=amenity)
+        ctx["image_formset"] = kwargs.get("image_formset") or VenueImageFormSet(instance=venue)
+        ctx["images_left"] = max(0, 5 - venue.images.count())
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        amenity = VenueAmenity.objects.get_or_create(venue=self.object)[0]
+        amenity_form = VenueAmenityForm(request.POST, instance=amenity)
+        image_formset = VenueImageFormSet(request.POST, request.FILES, instance=self.object)
+
+        if form.is_valid() and amenity_form.is_valid() and image_formset.is_valid():
+            with transaction.atomic():
+                form.save()
+                amenity_form.save()
+                image_formset.save()
+            return redirect(self.success_url)
+
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            amenity_form=amenity_form,
+            image_formset=image_formset
+        ))
+    
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.owner != request.user:
+            return HttpResponseForbidden("คุณไม่มีสิทธิ์แก้ไขสถานที่นี้")
+        return super().dispatch(request, *args, **kwargs)
+
+
+class VenueDeleteView(DeleteView):
+    model = Venue
+    template_name = 'venue/deleteVenue.html'
+    success_url = reverse_lazy('venue_list')
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.owner != request.user:
+            return HttpResponseForbidden("คุณไม่มีสิทธิ์ลบสถานที่นี้")
+        return super().dispatch(request, *args, **kwargs)
