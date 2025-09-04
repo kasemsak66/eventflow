@@ -1,0 +1,31 @@
+{% extends 'home/base.html' %}
+
+{% block title %}จองสถานที่ใหม่{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white shadow p-6 rounded-xl">
+
+  <!-- ✅ ส่วนแสดงชื่อและรูปสถานที่ -->
+  <div class="mb-4 text-center">
+    <h1 class="text-3xl font-black text-[#112d4e]">กรอกรายละเอียดการจอง</h1>
+
+    {% if venue.cover_image_url %}
+      <img src="{{ venue.cover_image_url }}" alt="รูปสถานที่" class="mt-2 rounded-lg shadow w-full">
+    {% else %}
+      <p class="text-gray-500 mt-2">ไม่มีรูปภาพสถานที่</p>
+    {% endif %}
+
+    <h2 class="text-2xl font-bold text-[#112d4e]">{{ venue.name }}</h2>
+  </div>
+
+  <!-- ฟอร์มจอง -->
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+    <button type="submit" class="mt-4 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded">
+      ยืนยันการจอง
+    </button>
+  </form>
+</div>
+{% endblock %}

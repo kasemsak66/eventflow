@@ -11,6 +11,8 @@
   <p class="mb-2"><strong>นามสกุล:</strong> {{ user.last_name }}</p>
   <p class="mb-2"><strong>เบอร์โทรศัพท์:</strong> {{ user.phone_num }}</p>
   <p class="mb-4"><strong>วันเกิด:</strong> {{ user.dob }}</p>
+  <p class="mb-4"><strong>ธนาคาร:</strong> {{ user.bank_name }}</p>
+  <p class="mb-4"><strong>เลขที่บัญชี:</strong> {{ user.bank_account_number }}</p>
 
   <a href="{% url 'profile_edit' %}" class="inline-block bg-[#3F72AF] hover:bg-[#112D4E] text-white font-bold py-2 px-4 rounded">
     แก้ไขข้อมูล

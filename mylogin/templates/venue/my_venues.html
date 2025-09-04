@@ -1,11 +1,12 @@
 {% extends 'home/base.html' %}
 
-{% block title %}สถานที่ทั้งหมด · Eventflow{% endblock %}
+{% block title %}สถานที่ของฉัน · Eventflow{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto">
   <div class="mb-4 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-[#112d4e]">สถานที่ทั้งหมด</h1>
+    <h1 class="text-2xl font-bold text-[#112d4e]">สถานที่ของฉัน</h1>
+    <a href="{% url 'venue_create' %}" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl">+ เพิ่มสถานที่</a>
   </div>
 
   {% if venues %}
@@ -29,7 +30,7 @@
       {% endfor %}
     </div>
   {% else %}
-    <div class="bg-white rounded-2xl shadow p-6 text-center text-gray-600">ยังไม่มีสถานที่</div>
+    <div class="bg-white rounded-2xl shadow p-6 text-center text-gray-600">คุณยังไม่มีสถานที่</div>
   {% endif %}
 </div>
 {% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'home/base.html' %}
+
+{% block title %}ยืนยันการยกเลิกการจอง{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto bg-white p-6 rounded shadow text-center">
+  <h1 class="text-xl font-bold text-red-600 mb-4">ยืนยันการยกเลิกการจอง</h1>
+  <p class="mb-4 text-gray-700">
+    ต้องการยกเลิกการจองสถานที่ <strong>{{ object.venue.name }}</strong><br>
+    ตั้งแต่ {{ object.start_date }} ถึง {{ object.end_date }}
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded mr-2">
+      ยืนยันยกเลิกการจอง
+    </button>
+    <a href="{% url 'booking_list' %}" class="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded">
+      ยกเลิก
+    </a>
+  </form>
+</div>
+{% endblock %}

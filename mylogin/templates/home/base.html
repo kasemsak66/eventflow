@@ -8,20 +8,36 @@
 </head>
 <body class="bg-[#f9f7f7] min-h-screen">
 
+  <!-- Navbar -->
   <nav class="bg-[#112d4e] text-[#f9f7f7] p-4">
     <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
 
-      <!-- Brand -->
+      <!-- Brand + Authenticated Actions -->
       <div class="text-xl font-bold flex items-center gap-4">
-        <span>Eventflow</span>
+        <span>EVENTFLOW</span>
 
-        <!-- Actions after brand (show only when logged in) -->
         {% if user.is_authenticated %}
         <div class="flex items-center gap-2">
+
+          <!-- รายการสถานที่ -->
           <a href="{% url 'venue_list' %}"
              class="bg-[#3f72af] hover:bg-[#2f5d97] text-white px-3 py-1 rounded transition">
-            รายการสถานที่
+            สถานที่ทั้งหมด
           </a>
+
+          <!-- สถานที่ของฉัน -->
+          <a href="{% url 'my_venues' %}"
+             class="bg-[#0b5f82] hover:bg-[#094d6c] text-white px-3 py-1 rounded transition">
+            สถานที่ของฉัน
+          </a>
+
+          <!-- การจอง -->
+          <a href="{% url 'booking_list' %}"
+             class="bg-[#ffc107] hover:bg-[#e0a800] text-black px-3 py-1 rounded transition">
+            การจอง
+          </a>
+
+          <!-- เพิ่มสถานที่ -->
           <a href="{% url 'venue_create' %}"
              class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded transition">
             เพิ่มสถานที่
@@ -30,7 +46,7 @@
         {% endif %}
       </div>
 
-      <!-- Right side -->
+      <!-- Right-side Buttons -->
       <div class="flex items-center space-x-4">
         {% if user.is_authenticated %}
           <a href="{% url 'profile' %}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">

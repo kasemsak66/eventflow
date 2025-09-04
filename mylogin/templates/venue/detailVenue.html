@@ -5,7 +5,7 @@
 {% block content %}
 <div class="max-w-6xl mx-auto">
 
-  <!-- รูปภาพอยู่ด้านบนสุด -->
+  <!-- กลับไปหน้ารายการ -->
   <a href="{% url 'venue_list' %}" class="text-sm text-[#3f72af] hover:underline">← กลับ</a>
 
   <div class="mt-3 bg-white rounded-2xl shadow overflow-hidden">
@@ -80,6 +80,16 @@
         {% if a.cctv %}<li>กล้องวงจรปิด / ระบบรักษาความปลอดภัย</li>{% endif %}
       </ul>
       {% endwith %}
+
+      <!-- ✅ ปุ่มจองสถานที่ -->
+    {% if request.user != venue.owner %}
+      <div class="mt-10 text-center">
+        <a href="{% url 'booking_create' %}?venue_id={{ venue.pk }}"
+           class="inline-block bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-3 rounded-xl transition">
+          📅 จองสถานที่นี้
+        </a>
+      </div>
+    {% endif %}
     </div>
   </div>
 </div>
