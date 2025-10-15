@@ -1,9 +1,10 @@
 {% extends 'home/base.html' %}
-
 {% block title %}เพิ่มสถานที่ใหม่ · Eventflow{% endblock %}
-
 {% block content %}
-<div class="max-w-3xl mx-auto px-4">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="max-w-6xl mx-auto px-4">
   <div class="mb-6 flex items-center justify-between">
     <h1 class="text-2xl font-bold text-[#112d4e]">เพิ่มสถานที่ใหม่</h1>
     <a href="{% url 'venue_list' %}" class="text-sm text-[#3f72af] hover:underline">← กลับไปยังรายการ</a>
@@ -18,13 +19,13 @@
       {% if form.non_field_errors %}
         <div class="mb-4 rounded-lg bg-red-100 text-red-700 p-3">{{ form.non_field_errors }}</div>
       {% endif %}
-      <div class="flex flex-col space-y-4">
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {# โชว์ฟิลด์ทั่วไป ยกเว้น code/latitude/longitude/extra_amenities (extra_amenities จะมีส่วนของมันเองด้านล่าง) #}
         {% for field in form %}
-          {% if field.name != "extra_amenities" %}
-            <div>
-              <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                {{ field.label }}
-              </label>
+          {% if field.name != 'code' and field.name != 'latitude' and field.name != 'longitude' and field.name != 'extra_amenities' %}
+            <div class="{% if forloop.counter == 1 %}lg:col-span-2{% endif %}">
+              <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
               {{ field }}
               {% if field.errors %}
                 <p class="text-sm text-red-600 mt-1">{{ field.errors|striptags }}</p>
@@ -35,28 +36,26 @@
       </div>
     </section>
 
-    <!-- สิ่งอำนวยความสะดวก -->
+    <!-- สิ่งอำนวยความสะดวก (amenity_form) -->
     <section class="bg-white rounded-2xl shadow p-6">
       <h2 class="text-lg font-semibold text-[#112d4e] mb-4">สิ่งอำนวยความสะดวก</h2>
       {% if amenity_form.non_field_errors %}
         <div class="mb-4 rounded-lg bg-red-100 text-red-700 p-3">{{ amenity_form.non_field_errors }}</div>
       {% endif %}
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {% for field in amenity_form %}
+        {% for a in amenity_form %}
           <div>
-            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-              {{ field.label }}
-            </label>
-            {{ field }}
-            {% if field.errors %}
-              <p class="text-sm text-red-600 mt-1">{{ field.errors|striptags }}</p>
+            <label for="{{ a.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ a.label }}</label>
+            {{ a }}
+            {% if a.errors %}
+              <p class="text-sm text-red-600 mt-1">{{ a.errors|striptags }}</p>
             {% endif %}
           </div>
         {% endfor %}
       </div>
     </section>
 
-    <!-- สิ่งอำนวยความสะดวกเพิ่มเติม -->
+    <!-- สิ่งอำนวยความสะดวกเพิ่มเติม (เหลืออันเดียว) -->
     <section class="bg-white rounded-2xl shadow p-6">
       <h2 class="text-lg font-semibold text-[#112d4e] mb-4">สิ่งอำนวยความสะดวกเพิ่มเติม</h2>
       <div class="flex flex-col space-y-4">
@@ -70,6 +69,40 @@
           {% endif %}
         </div>
       </div>
+    </section>
+
+    <!-- ตำแหน่งบนแผนที่ -->
+    <section class="bg-white rounded-2xl shadow p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-[#112d4e]">ตำแหน่งบนแผนที่</h2>
+        <span class="text-sm text-gray-500">คลิกบนแผนที่/ลากหมุดเพื่อเลือกจุด — ระบบจะเติมที่อยู่อัตโนมัติ</span>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="order-2 lg:order-1">
+          <div id="map" class="w-full rounded" style="height: 420px;"></div>
+        </div>
+
+        <!-- โชว์เฉพาะ lat/long -->
+        <div class="order-1 lg:order-2 grid grid-cols-2 gap-4">
+          <div>
+            <label for="{{ form.latitude.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+              {{ form.latitude.label }}
+            </label>
+            {{ form.latitude }}
+            {% if form.latitude.errors %}<p class="text-sm text-red-600 mt-1">{{ form.latitude.errors|striptags }}</p>{% endif %}
+          </div>
+          <div>
+            <label for="{{ form.longitude.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+              {{ form.longitude.label }}
+            </label>
+            {{ form.longitude }}
+            {% if form.longitude.errors %}<p class="text-sm text-red-600 mt-1">{{ form.longitude.errors|striptags }}</p>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-500 mt-3">หมายเหตุ: ระบบจะเติมที่อยู่จาก OpenStreetMap (Nominatim) เป็นภาษาไทยโดยอัตโนมัติเมื่อเลือกพิกัด</p>
     </section>
 
     <!-- รูปภาพ -->
@@ -107,13 +140,83 @@
 
     <!-- ปุ่ม -->
     <div class="flex items-center gap-3 pt-2">
-      <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl shadow">
-        💾 บันทึก
-      </button>
-      <a href="{% url 'venue_list' %}" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">
-        ❌ ยกเลิก
-      </a>
+      <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl shadow">💾 บันทึก</button>
+      <a href="{% url 'venue_list' %}" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">❌ ยกเลิก</a>
     </div>
   </form>
 </div>
+
+<script>
+  const latInput  = document.getElementById("id_latitude")  || document.querySelector('[name="latitude"]');
+  const lngInput  = document.getElementById("id_longitude") || document.querySelector('[name="longitude"]');
+  const addrInput = document.getElementById("id_address")   || document.querySelector('[name="address"]');
+
+  // ✅ อนุญาตให้ Auto-fill ก็ต่อเมื่อช่องว่าง
+  let allowAutoAddress = !addrInput || addrInput.value.trim().length === 0;
+
+  if (addrInput) {
+    addrInput.addEventListener('input', () => {
+      // ถ้าผู้ใช้พิมพ์อะไร → ปิด auto; ถ้าลบจนว่าง → เปิด auto อีกครั้ง
+      allowAutoAddress = addrInput.value.trim().length === 0;
+    });
+  }
+
+  const hasPoint = !!(latInput?.value && lngInput?.value && !isNaN(parseFloat(latInput.value)) && !isNaN(parseFloat(lngInput.value)));
+  const startLat = hasPoint ? parseFloat(latInput.value) : 13.736717;
+  const startLng = hasPoint ? parseFloat(lngInput.value) : 100.523186;
+  const startZoom = hasPoint ? 17 : 13;
+
+  const map = L.map('map', { zoomControl: true }).setView([startLat, startLng], startZoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+
+  let marker = null;
+
+  function setPoint(lat, lng, doReverse = false) {
+    if (latInput) latInput.value = Number(lat).toFixed(6);
+    if (lngInput) lngInput.value = Number(lng).toFixed(6);
+
+    // ✅ เติมที่อยู่อัตโนมัติเมื่อ doReverse และ "อนุญาต auto" (คือช่องที่อยู่ว่าง)
+    if (doReverse && addrInput && allowAutoAddress) {
+      reverseGeocode(lat, lng).then(addr => {
+        // ก่อนเขียนซ้ำ ตรวจอีกทีว่ายังอนุญาตอยู่ไหม (เผื่อผู้ใช้เริ่มพิมพ์ระหว่างรอ fetch)
+        if (addr && allowAutoAddress) addrInput.value = addr;
+      }).catch(() => {/* เงียบ ๆ */});
+    }
+  }
+
+  async function reverseGeocode(lat, lng) {
+    const url = new URL('https://nominatim.openstreetmap.org/reverse');
+    url.searchParams.set('format', 'jsonv2');
+    url.searchParams.set('lat', lat);
+    url.searchParams.set('lon', lng);
+    url.searchParams.set('accept-language', 'th');
+    url.searchParams.set('addressdetails', '1');
+
+    const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.display_name || null;
+  }
+
+  function placeOrMove(latlng, doReverse = false) {
+    if (!marker) {
+      marker = L.marker(latlng, { draggable: true }).addTo(map);
+      marker.on('dragend', (e) => {
+        const pos = e.target.getLatLng();
+        setPoint(pos.lat, pos.lng, true);
+      });
+    } else {
+      marker.setLatLng(latlng);
+    }
+    setPoint(latlng[0], latlng[1], doReverse);
+  }
+
+  if (hasPoint) placeOrMove([startLat, startLng], false);
+
+  map.on('click', (e) => {
+    placeOrMove([e.latlng.lat, e.latlng.lng], true);
+    map.flyTo(e.latlng, 17);
+  });
+</script>
+
 {% endblock %}

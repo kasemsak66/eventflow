@@ -1,0 +1,72 @@
+{% extends 'home/base.html' %}
+{% load static %}
+{% block title %}แผนที่สถานที่ · Eventflow{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="max-w-6xl mx-auto px-4">
+  <div class="mb-3 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-[#112d4e]">แผนที่สถานที่</h1>
+    <a href="{% url 'venue_list' %}" class="text-sm text-[#3f72af] hover:underline">← กลับไปยังรายการ</a>
+  </div>
+
+  <!-- debug เล็กน้อย -->
+  <p class="text-sm text-gray-500 mb-2">จำนวนสถานที่ทั้งหมด: {{ venues_count|default:0 }}</p>
+
+  <div id="map" class="w-full rounded-2xl shadow" style="height: 70vh;"></div>
+</div>
+
+{{ venues|json_script:"venues-data" }}
+
+<script>
+(function() {
+  const raw = document.getElementById("venues-data")?.textContent || "[]";
+  const venues = JSON.parse(raw);
+
+  const map = L.map('map').setView([13.736717, 100.523186], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+  L.control.scale({ metric: true, imperial: false }).addTo(map);
+
+  // คัดเฉพาะอันที่มีพิกัด usable
+  const points = (venues || []).map(v => {
+    const lat = typeof v.latitude === "number" ? v.latitude : parseFloat(v.latitude);
+    const lng = typeof v.longitude === "number" ? v.longitude : parseFloat(v.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { id: v.id, name: v.name || "-", code: v.code || "-", lat, lng };
+  }).filter(Boolean);
+
+  const bounds = L.latLngBounds();
+  let pinCount = 0;
+
+  points.forEach(p => {
+    L.marker([p.lat, p.lng], { title: p.code || p.name || String(p.id) })
+      .bindPopup(`
+        <div class="text-sm">
+          <div class="font-semibold">${p.name}</div>
+          <div>Code: ${p.code}</div>
+          <div>Lat: ${p.lat.toFixed(6)}, Lng: ${p.lng.toFixed(6)}</div>
+          <div class="mt-2"><a class="text-[#3f72af] hover:underline" href="/venues/${p.id}/">ดูรายละเอียด</a></div>
+        </div>
+      `)
+      .addTo(map);
+    bounds.extend([p.lat, p.lng]);
+    pinCount++;
+  });
+
+  if (pinCount === 1) {
+    const c = bounds.getCenter();
+    map.setView(c, 17);
+  } else if (pinCount > 1) {
+    map.fitBounds(bounds.pad(0.20), { maxZoom: 16 });
+  } else {
+    // ไม่มีหมุด → แสดงโน้ตเล็ก ๆ
+    const note = document.createElement('div');
+    note.className = "mt-3 text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded p-2 max-w-6xl mx-auto px-4";
+    note.textContent = "ยังไม่มีสถานที่ที่มีพิกัดพร้อมแสดง — กรุณาบันทึก Latitude/Longitude ให้สถานที่อย่างน้อย 1 รายการ";
+    document.body.appendChild(note);
+  }
+})();
+</script>
+{% endblock %}

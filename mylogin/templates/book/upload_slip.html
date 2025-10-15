@@ -1,0 +1,156 @@
+{% extends 'home/base.html' %}
+
+{% block title %}แนบสลิปการชำระเงิน{% endblock %}
+
+{% block content %}
+{# 
+  data-required: ยอดที่ต้องชำระ (ใช้ช่วย validate ฝั่ง JS)
+  data-approved-ts: Unix timestamp (วินาที) ของเวลาที่ "อนุมัติให้ชำระ"
+#}
+<div class="max-w-xl mx-auto bg-white shadow p-6 rounded-xl space-y-5" id="upload-slip"
+     data-required="{{ booking.total_price|floatformat:2 }}"
+     data-approved-ts="{% if booking.approved_at %}{{ booking.approved_at|date:'U' }}{% endif %}">
+  <h1 class="text-2xl font-bold text-[#112d4e]">แนบสลิปการชำระเงิน</h1>
+
+  <!-- ข้อมูลสถานที่และยอด -->
+  <div class="text-sm text-gray-700">
+    <p>สถานที่: <b>{{ booking.venue.name }}</b></p>
+    <p>ยอดรวมที่ต้องชำระ: <b id="required-amount">{{ booking.total_price }}</b> บาท</p>
+
+    {# เส้นตาย + นับถอยหลัง (ดึงจาก approved_at) #}
+    {% if booking.approved_at %}
+      <div class="mt-2 text-sm">
+        <span class="font-medium text-[#112d4e]">ต้องชำระ/แนบสลิปก่อน:</span>
+        <time id="deadline-time"></time>
+        <span id="deadline-countdown" class="text-gray-500"></span>
+      </div>
+      <hr class="my-3">
+    {% else %}
+      <hr class="my-3">
+    {% endif %}
+
+    {% if booking.venue.owner.bank_qr %}
+      <p class="mb-1">📷 สแกนเพื่อโอน:</p>
+      <img src="{{ booking.venue.owner.bank_qr.url }}" alt="QR Code" class="w-56 border rounded">
+    {% else %}
+      <p class="mb-1">💳 ข้อมูลบัญชีสำหรับโอน</p>
+      <p>ธนาคาร: <b>{{ booking.venue.owner.bank_name|default:"-" }}</b></p>
+      <p>เลขบัญชี/พร้อมเพย์: <b>{{ booking.venue.owner.bank_account_number|default:"-" }}</b></p>
+    {% endif %}
+  </div>
+
+  <!-- ฟอร์มแนบสลิป -->
+  <form method="post" enctype="multipart/form-data" class="space-y-4" id="slip-form">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="rounded-md bg-red-50 border border-red-200 text-red-700 text-sm p-3">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div>
+      <label class="block text-sm font-medium">จำนวนเงินที่โอน <span class="text-red-600">*</span></label>
+      <div class="text-xs text-gray-500 mb-1">ต้องเท่ากับยอดที่ต้องชำระ (<span id="hint-required">{{ booking.total_price }}</span> บาท)</div>
+      {{ form.amount_paid }}
+      {% if form.amount_paid.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.amount_paid.errors|join:", " }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium">อัปโหลดสลิป <span class="text-red-600">*</span></label>
+      {{ form.payment_slip }}
+      {% if form.payment_slip.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.payment_slip.errors|join:", " }}</p>
+      {% endif %}
+      <p class="text-xs text-gray-500 mt-1">รองรับ .jpg, .png, .jpeg</p>
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <button type="submit" id="submit-btn"
+              class="bg-[#3f72af] hover:bg-[#2c5282] disabled:opacity-60 disabled:cursor-not-allowed
+                     text-white px-4 py-2 rounded-lg">
+        อัปโหลด
+      </button>
+      <a href="{% url 'booking_list' %}" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+        ยกเลิก
+      </a>
+    </div>
+  </form>
+</div>
+
+{# ===== JS: ใช้เวลาไทย Asia/Bangkok แบบแน่นอน ===== #}
+<script>
+(function () {
+  const root = document.getElementById('upload-slip');
+  if (!root) return;
+
+  // ต้องเท่ากับฝั่ง DB ที่ตั้ง MySQL Event ไว้ (เช่น 24 ชม.)
+  const PAY_HOURS = 24;
+
+  // ---- helper ----
+  const thDT = new Intl.DateTimeFormat('th-TH', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  });
+  const fmtNum = (n) => Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // 1) ตรวจจำนวนเงินให้เท่ากับยอดที่ต้องชำระ
+  const required = parseFloat(root.dataset.required || '0');
+  const amountInput = document.querySelector('[name="amount_paid"]');
+  const submitBtn = document.getElementById('submit-btn');
+
+  function validateAmount() {
+    if (!amountInput) return;
+    const val = parseFloat(amountInput.value);
+    const ok = !isNaN(val) && Math.abs(val - required) < 0.005; // อนุโลม 0.005 เพื่อกัน floating
+    submitBtn.disabled = !ok;
+    submitBtn.title = ok ? '' : `กรุณากรอกยอดให้เท่ากับ ${fmtNum(required)} บาท`;
+  }
+  if (amountInput) {
+    if (!amountInput.value) amountInput.placeholder = required.toFixed(2);
+    amountInput.addEventListener('input', validateAmount);
+    validateAmount();
+  }
+
+  // 2) เดดไลน์แบบไทย: base = approved_at (Unix sec) + PAY_HOURS
+  const approvedTsStr = root.dataset.approvedTs;
+  if (approvedTsStr) {
+    const approvedMs = parseInt(approvedTsStr, 10) * 1000; // แปลงเป็นมิลลิวินาที
+    if (!isNaN(approvedMs)) {
+      const deadlineMs = approvedMs + PAY_HOURS * 3600 * 1000;
+      const deadlineEl = document.getElementById('deadline-time');
+      const countdownEl = document.getElementById('deadline-countdown');
+
+      function fmtCountdown(ms) {
+        if (ms <= 0) return 'หมดเวลาแล้ว';
+        const s = Math.floor(ms / 1000);
+        const d = Math.floor(s / 86400);
+        const h = Math.floor((s % 86400) / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        if (d > 0) return `${d} วัน ${h} ชม. ${m} นาที`;
+        if (h > 0) return `${h} ชม. ${m} นาที`;
+        if (m > 0) return `${m} นาที ${sec} วินาที`;
+        return `${sec} วินาที`;
+      }
+
+      function tick() {
+        const nowMs = Date.now();
+        // แสดง deadline เป็นเวลาไทย
+        deadlineEl.textContent = thDT.format(new Date(deadlineMs));
+        // นับถอยหลัง
+        const msLeft = deadlineMs - nowMs;
+        countdownEl.textContent = ` (เหลือเวลา: ${fmtCountdown(msLeft)})`;
+        countdownEl.classList.toggle('text-red-600', msLeft <= 5 * 60 * 1000);
+      }
+
+      tick();
+      setInterval(tick, 1000);
+    }
+  }
+})();
+</script>
+{% endblock %}

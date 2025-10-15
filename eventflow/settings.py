@@ -11,7 +11,15 @@ SECRET_KEY = 'django-insecure-o+i=qpg=*yj=q&f--gg2dsz63%e8!nzjo%!g61o2npdsl4&&+^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    ".ngrok-free.app",  # อนุญาตทุกซับโดเมนของ ngrok
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://*.ngrok-free.app",
+]
 
 
 # Application definition
@@ -136,3 +144,5 @@ LOGIN_URL = '/login/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+USE_TZ = True
+TIME_ZONE = 'Asia/Bangkok'

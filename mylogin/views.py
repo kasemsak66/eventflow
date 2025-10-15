@@ -1,22 +1,21 @@
-from datetime import timezone
-from django.contrib.auth import authenticate, login as auth_login
+from django.utils import timezone
+from django.contrib.auth import authenticate, login as auth_login , logout as auth_logout,update_session_auth_hash
 from django.forms import HiddenInput
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from mylogin.forms import  CustomUserCreateForm, CustomUserLoginForm, CustomUserUpdateForm, VenueAmenityForm, VenueForm, VenueImageFormSet
-from mylogin.models import Venue, VenueAmenity
-from django.contrib.auth import logout as auth_logout
+from mylogin.forms import  CustomUserCreateForm, CustomUserLoginForm, CustomUserUpdateForm, VenueAmenityForm, VenueForm, VenueImageFormSet , BookingForm, PaymentSlipForm, OwnerBankForm
+from mylogin.models import Venue, VenueAmenity , Booking
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
-from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView ,TemplateView
 from django.db import transaction
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Booking
-from .forms import BookingForm
-
+from decimal import Decimal
+from django.views.generic import TemplateView
+from django.db.models import F, Q
+from openlocationcode import openlocationcode as olc 
 
 def login(request):
     next_url = request.GET.get('next', None)
@@ -147,26 +146,18 @@ class VenueCreateView(CreateView):
         amenity_form = VenueAmenityForm(request.POST)
         image_formset = VenueImageFormSet(request.POST, request.FILES)
 
-        print("form valid:", form.is_valid())
-        print("amenity_form valid:", amenity_form.is_valid())
-        print("image_formset valid:", image_formset.is_valid())
-
-        print("form.errors:", form.errors)
-        print("amenity_form.errors:", amenity_form.errors)
-        print("image_formset.errors:", image_formset.errors)
-
         if form.is_valid() and amenity_form.is_valid() and image_formset.is_valid():
             with transaction.atomic():
                 venue = form.save(commit=False)
-                venue.owner = request.user  # ✅ กำหนด owner ก่อนบันทึก
+                if request.user.is_authenticated:
+                    venue.owner = request.user
+                # ไม่ต้อง set code — โมเดลจะคำนวณเองใน save()
                 venue.save()
 
-                # บันทึกสิ่งอำนวยความสะดวก
                 amenity = amenity_form.save(commit=False)
                 amenity.venue = venue
                 amenity.save()
 
-                # ผูก image_formset กับ venue ที่เพิ่งสร้าง แล้ว save
                 image_formset.instance = venue
                 image_formset.save()
 
@@ -187,39 +178,54 @@ class VenueUpdateView(UpdateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         venue = self.object
+
+        # amenity form
         amenity, _ = VenueAmenity.objects.get_or_create(venue=venue)
         ctx["amenity_form"] = kwargs.get("amenity_form") or VenueAmenityForm(instance=amenity)
-        ctx["image_formset"] = kwargs.get("image_formset") or VenueImageFormSet(instance=venue)
-        ctx["images_left"] = max(0, 5 - venue.images.count()) #type:  ignore
+
+        # image formset (ใส่ prefix='images' เสมอ)
+        ctx["image_formset"] = kwargs.get("image_formset") or VenueImageFormSet(
+            instance=venue, prefix='images'
+        )
+
+        # นับเหลือกี่รูป (ปรับ related name ตามโมเดลของคุณ)
+        images_qs = getattr(venue, "images", None)
+        if images_qs is not None:
+            ctx["images_left"] = max(0, 5 - images_qs.count())
+        else:
+            # fallback ถ้า related name เป็นอย่างอื่น เช่น venueimage_set
+            ctx["images_left"] = max(0, 5 - getattr(venue, "venueimage_set").count())
+
         return ctx
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
+
+        # amenity form
         amenity = VenueAmenity.objects.get_or_create(venue=self.object)[0]
         amenity_form = VenueAmenityForm(request.POST, instance=amenity)
-        image_formset = VenueImageFormSet(request.POST, request.FILES, instance=self.object)
+
+        # image formset (ต้อง prefix='images' ให้ตรงกับ GET)
+        image_formset = VenueImageFormSet(
+            request.POST, request.FILES, instance=self.object, prefix='images'
+        )
 
         if form.is_valid() and amenity_form.is_valid() and image_formset.is_valid():
             with transaction.atomic():
-                form.save()
+                venue = form.save(commit=False)
+                # ปล่อยให้โมเดล/logic ภายใน save() คำนวณ Plus Code เองจาก lat/lng
+                venue.save()
                 amenity_form.save()
                 image_formset.save()
             return redirect(self.success_url)
 
+        # ไม่ผ่าน validation → ส่งกลับ template พร้อม error และ formset ที่มี prefix แล้ว
         return self.render_to_response(self.get_context_data(
             form=form,
             amenity_form=amenity_form,
             image_formset=image_formset
         ))
-    
-    def dispatch(self, request, *args, **kwargs):
-        obj = self.get_object()
-        if obj.owner != request.user: #type:  ignore
-            return HttpResponseForbidden("คุณไม่มีสิทธิ์แก้ไขสถานที่นี้")
-        return super().dispatch(request, *args, **kwargs)
-
-
 class VenueDeleteView(DeleteView):
     model = Venue
     template_name = 'venue/deleteVenue.html'
@@ -239,8 +245,24 @@ class MyVenueListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Venue.objects.filter(owner=self.request.user)
-        
     
+
+class VenueMapView(TemplateView):
+    template_name = "venue/venue_map.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        # ส่งทุกรายการ แล้วให้ JS คัดเฉพาะที่มีพิกัด (กันกรองพลาดจนไม่มีหมุด)
+        qs = (
+            Venue.objects
+            .annotate(id=F("venue_id"))  # ถ้า PK ชื่อ venue_id
+            .values("id", "name", "code", "latitude", "longitude")
+            .order_by("name")
+        )
+        data = list(qs)
+        ctx["venues"] = data
+        ctx["venues_count"] = len(data)  # เผื่อ debug ใน template
+        return ctx
 
 class BookingCreateView(LoginRequiredMixin, CreateView):
     model = Booking
@@ -306,3 +328,125 @@ class BookingDeleteView(DeleteView):
         if booking.user != request.user: #type:  ignore
             return HttpResponseForbidden("คุณไม่มีสิทธิ์ลบการจองนี้")
         return super().dispatch(request, *args, **kwargs)
+    
+def _is_owner(user, booking: Booking) -> bool:
+    return booking.venue.owner == user
+
+@login_required(login_url='login')
+def booking_approve_initial(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    if not _is_owner(request.user, booking):
+        return HttpResponseForbidden("คุณไม่มีสิทธิ์ดำเนินการนี้")
+
+    # ต้องมีข้อมูลธนาคารหรือรูป QR ก่อน
+    if not (request.user.bank_qr or (request.user.bank_name and request.user.bank_account_number)):
+        messages.warning(request, "กรุณาเพิ่มข้อมูลบัญชี/QR ก่อนอนุมัติ")
+        if request.method == "POST":
+            form = OwnerBankForm(request.POST, request.FILES, instance=request.user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "บันทึกข้อมูลการรับชำระแล้ว ลองอนุมัติอีกครั้ง")
+                return redirect('booking_approve_initial', pk=booking.pk)
+        else:
+            form = OwnerBankForm(instance=request.user)
+        return render(request, 'book/owner_bank_required.html', {"form": form, "booking": booking})
+
+    # ผ่านเงื่อนไขธนาคาร → อนุมัติรอบแรก
+    booking.status = 'approved'   # รอชำระเงิน
+    booking.approved_at = timezone.now()
+    booking.save(update_fields=['status', 'approved_at'])
+    messages.success(request, "อนุมัติคำขอแล้ว — ผู้เช่าจะเห็นรายละเอียดการชำระเงิน")
+    return redirect('booking_list')
+
+@login_required(login_url='login')
+def booking_upload_slip(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    if booking.user != request.user:
+        return HttpResponseForbidden("อนุญาตเฉพาะผู้จอง")
+    if booking.status != 'approved':
+        messages.error(request, "สถานะไม่ถูกต้องสำหรับการอัปโหลดสลิป")
+        return redirect('booking_list')
+
+    if request.method == "POST":
+        form = PaymentSlipForm(request.POST, request.FILES, instance=booking)
+        if form.is_valid():
+            # ✅ กันเผื่อเช็คซ้ำความเท่ากันของยอด
+            amount = form.cleaned_data["amount_paid"]
+            required = booking.total_price
+            if Decimal(amount) != Decimal(required):
+                form.add_error("amount_paid", f"ต้องชำระ {required} บาท (คุณกรอก {amount} บาท)")
+            else:
+                form.save()  # บันทึก amount_paid + payment_slip
+                booking.status = 'awaiting_confirmation'
+                booking.slip_uploaded_at = timezone.now()
+                booking.save(update_fields=['status', 'slip_uploaded_at'])
+                messages.success(request, "อัปโหลดสลิปเรียบร้อย รอเจ้าของตรวจสอบ")
+                return redirect('booking_list')
+    else:
+        form = PaymentSlipForm(instance=booking)
+
+    return render(request, 'book/upload_slip.html', {"form": form, "booking": booking})
+
+@login_required(login_url='login')
+def booking_confirm_payment(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    if not _is_owner(request.user, booking):
+        return HttpResponseForbidden("คุณไม่มีสิทธิ์ดำเนินการนี้")
+    if booking.status != 'awaiting_confirmation':
+        messages.error(request, "สถานะไม่ถูกต้องสำหรับการยืนยันการจอง")
+        return redirect('booking_list')
+
+    # ต้องมีสลิป
+    if not booking.payment_slip:
+        messages.error(request, "ไม่พบสลิปการชำระเงิน")
+        return redirect('booking_list')
+
+    # ต้องมีจำนวนเงิน
+    if booking.amount_paid is None:
+        messages.error(request, "รายการนี้ยังไม่มีจำนวนเงินที่ผู้เช่ากรอก")
+        return redirect('booking_list')
+
+    # เทียบยอด “ต้องเท่ากันเป๊ะ”
+    # (ถ้าต้องการยอมรับส่วนต่างเล็กน้อย เช่น ค่าปัดเศษ โค้ดตัวอย่าง tolerance ด้านล่าง)
+    required = Decimal(booking.total_price)
+    paid = Decimal(booking.amount_paid)
+
+    if paid != required:
+        diff = paid - required
+        # แสดงข้อความชัดเจน
+        messages.error(
+            request,
+            f"จำนวนเงินไม่ตรงกับยอดที่ต้องชำระ: ต้องชำระ {required} บาท แต่ชำระมา {paid} บาท (ต่าง {diff:+})"
+        )
+        # คงสถานะไว้ที่ 'awaiting_confirmation' ให้เจ้าของตัดสินใจว่าจะ 'reject' หรือให้ผู้เช่าแก้ไข
+        return redirect('booking_list')
+
+    # ผ่านเงื่อนไข → ยืนยันสำเร็จ
+    booking.status = 'completed'
+    booking.completed_at = timezone.now()
+    booking.save(update_fields=['status', 'completed_at'])
+    messages.success(request, "ยืนยันการจองเสร็จสมบูรณ์")
+    return redirect('booking_list')
+
+@login_required(login_url='login')
+def booking_reject(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    if not _is_owner(request.user, booking):
+        return HttpResponseForbidden("คุณไม่มีสิทธิ์ดำเนินการนี้")
+    booking.status = 'rejected'
+    booking.save(update_fields=['status'])
+    messages.info(request, "ปฏิเสธคำขอแล้ว")
+    return redirect('booking_list')
+
+@login_required(login_url='login')
+def booking_cancel(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    if booking.user != request.user:
+        return HttpResponseForbidden("อนุญาตเฉพาะผู้จอง")
+    if booking.status in ['completed', 'cancelled']:
+        messages.error(request, "ไม่สามารถยกเลิกในสถานะปัจจุบันได้")
+        return redirect('booking_list')
+    booking.status = 'cancelled'
+    booking.save(update_fields=['status'])
+    messages.info(request, "ยกเลิกแล้ว")
+    return redirect('booking_list')

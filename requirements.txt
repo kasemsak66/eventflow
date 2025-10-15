@@ -13,3 +13,4 @@ cryptography
 django-tailwind 
 django-widget-tweaks
 django-multiselectfield
+openlocationcode
