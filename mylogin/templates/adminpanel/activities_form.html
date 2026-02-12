@@ -1,0 +1,25 @@
+{% extends "home/base.html" %}
+{% block title %}แก้ไข Activity · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-xl shadow p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-bold text-[#112d4e]">แก้ไข Activity</h1>
+    <a href="{% url 'admin_activities_list' %}" class="text-sm text-[#3f72af] hover:underline">← กลับ</a>
+  </div>
+
+  <form method="post" class="space-y-3">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <div class="mt-4 flex gap-2">
+      <button class="bg-[#3f72af] hover:bg-[#2f5d97] text-white px-4 py-2 rounded" type="submit">
+        บันทึก
+      </button>
+      <a class="bg-gray-200 px-4 py-2 rounded" href="{% url 'admin_activities_list' %}">
+        ยกเลิก
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

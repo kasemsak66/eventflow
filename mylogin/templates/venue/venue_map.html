@@ -5,68 +5,81 @@
 {% block content %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-<div class="max-w-6xl mx-auto px-4">
-  <div class="mb-3 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-[#112d4e]">แผนที่สถานที่</h1>
-    <a href="{% url 'venue_list' %}" class="text-sm text-[#3f72af] hover:underline">← กลับไปยังรายการ</a>
+<div class="max-w-6xl mx-auto px-4"
+     x-data="{
+        venues: [],
+        map: null,
+        bounds: null,
+        
+        // --- 1. เริ่มต้นทำงาน ---
+        init() {
+          // อ่านข้อมูล JSON จาก Django Script Tag ด้านล่าง
+          const rawEl = document.getElementById('venues-data');
+          try {
+            this.venues = JSON.parse(rawEl.textContent) || [];
+          } catch (e) { this.venues = []; }
+
+          // สร้างแผนที่
+          this.map = L.map(this.$refs.mapEl).setView([13.736717, 100.523186], 6);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(this.map);
+          
+          this.bounds = L.latLngBounds(); // เตรียม object สำหรับคำนวณขอบเขต
+
+          // --- 2. วนลูปสร้างหมุด (Pins) ---
+          let pinCount = 0;
+          this.venues.forEach(v => {
+            const lat = parseFloat(v.latitude);
+            const lng = parseFloat(v.longitude);
+            
+            // กรองเฉพาะที่มีพิกัดถูกต้อง
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+              L.marker([lat, lng], { title: v.name })
+                .addTo(this.map)
+                .bindPopup(`
+                  <div class='text-sm min-w-[150px]'>
+                    <div class='font-bold text-[#112d4e]'>${v.name}</div>
+                    <div class='text-gray-500 text-xs mb-2'>Code: ${v.code}</div>
+                    <a href='/venues/${v.id}/' class='text-[#3f72af] hover:underline block'>👉 ดูรายละเอียด</a>
+                  </div>
+                `);
+              
+              this.bounds.extend([lat, lng]); // ขยายขอบเขต
+              pinCount++;
+            }
+          });
+
+          // --- 3. ปรับมุมกล้องให้พอดีกับทุกหมุด ---
+          if (pinCount > 0) {
+            this.map.fitBounds(this.bounds.pad(0.1));
+          }
+        },
+
+        // ฟังก์ชันหาตำแหน่งฉัน
+        locateMe() {
+          if (!navigator.geolocation) return;
+          navigator.geolocation.getCurrentPosition(pos => {
+             const lat = pos.coords.latitude, lng = pos.coords.longitude;
+             L.marker([lat, lng]).addTo(this.map).bindPopup('คุณอยู่ที่นี่').openPopup();
+             this.map.flyTo([lat, lng], 15);
+          });
+        }
+     }">
+
+  <div class="mb-4 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-[#112d4e]">แผนที่สถานที่ทั้งหมด</h1>
+    <div class="flex gap-3">
+      <button @click="locateMe()" class="px-3 py-1.5 text-sm border rounded hover:bg-gray-50">📍 ตำแหน่งของฉัน</button>
+      <a href="{% url 'venue_list' %}" class="text-sm text-[#3f72af] hover:underline pt-2">← รายการ</a>
+    </div>
   </div>
 
-  <!-- debug เล็กน้อย -->
-  <p class="text-sm text-gray-500 mb-2">จำนวนสถานที่ทั้งหมด: {{ venues_count|default:0 }}</p>
-
-  <div id="map" class="w-full rounded-2xl shadow" style="height: 70vh;"></div>
+  <div x-ref="mapEl" class="w-full rounded-2xl shadow-lg border border-gray-200" style="height: 75vh;"></div>
+  
+  <p class="text-center text-gray-400 text-xs mt-2">แสดงเฉพาะสถานที่ที่มีพิกัด Latitude/Longitude แล้วเท่านั้น</p>
 </div>
 
 {{ venues|json_script:"venues-data" }}
 
-<script>
-(function() {
-  const raw = document.getElementById("venues-data")?.textContent || "[]";
-  const venues = JSON.parse(raw);
-
-  const map = L.map('map').setView([13.736717, 100.523186], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-  L.control.scale({ metric: true, imperial: false }).addTo(map);
-
-  // คัดเฉพาะอันที่มีพิกัด usable
-  const points = (venues || []).map(v => {
-    const lat = typeof v.latitude === "number" ? v.latitude : parseFloat(v.latitude);
-    const lng = typeof v.longitude === "number" ? v.longitude : parseFloat(v.longitude);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-    return { id: v.id, name: v.name || "-", code: v.code || "-", lat, lng };
-  }).filter(Boolean);
-
-  const bounds = L.latLngBounds();
-  let pinCount = 0;
-
-  points.forEach(p => {
-    L.marker([p.lat, p.lng], { title: p.code || p.name || String(p.id) })
-      .bindPopup(`
-        <div class="text-sm">
-          <div class="font-semibold">${p.name}</div>
-          <div>Code: ${p.code}</div>
-          <div>Lat: ${p.lat.toFixed(6)}, Lng: ${p.lng.toFixed(6)}</div>
-          <div class="mt-2"><a class="text-[#3f72af] hover:underline" href="/venues/${p.id}/">ดูรายละเอียด</a></div>
-        </div>
-      `)
-      .addTo(map);
-    bounds.extend([p.lat, p.lng]);
-    pinCount++;
-  });
-
-  if (pinCount === 1) {
-    const c = bounds.getCenter();
-    map.setView(c, 17);
-  } else if (pinCount > 1) {
-    map.fitBounds(bounds.pad(0.20), { maxZoom: 16 });
-  } else {
-    // ไม่มีหมุด → แสดงโน้ตเล็ก ๆ
-    const note = document.createElement('div');
-    note.className = "mt-3 text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded p-2 max-w-6xl mx-auto px-4";
-    note.textContent = "ยังไม่มีสถานที่ที่มีพิกัดพร้อมแสดง — กรุณาบันทึก Latitude/Longitude ให้สถานที่อย่างน้อย 1 รายการ";
-    document.body.appendChild(note);
-  }
-})();
-</script>
 {% endblock %}

@@ -1,263 +1,261 @@
 {% extends 'home/base.html' %}
 
-{% block title %}รายการจองทั้งหมด{% endblock %}
+{% block title %}รายการจองทั้งหมด · Eventflow{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-12" id="booking-page"
+<div class="max-w-5xl mx-auto py-10 px-4 space-y-16" id="booking-page"
      data-pay-hours="24" data-confirm-hours="12">
-  {# ↑ เปลี่ยนค่า 24/12 ให้ตรงกับ MySQL Event ของคุณได้เลย #}
 
-  <!-- ส่วนที่ 1: รายการที่ฉันจอง -->
-  <section>
-    <h1 class="text-2xl font-bold text-[#112d4e] mb-4">📅 รายการที่ฉันจอง</h1>
-
-    {% if bookings %}
-      <div class="grid gap-4">
-        {% for b in bookings %}
-          <div class="bg-white rounded-xl shadow p-4">
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <h2 class="font-semibold text-[#112d4e]">{{ b.venue.name }}</h2>
-                <p class="text-sm text-gray-600">
-                  {{ b.start_date }} - {{ b.end_date }} | {{ b.start_time }} - {{ b.end_time }}
-                </p>
-                <p class="text-sm text-gray-500">สถานะ: {{ b.get_status_display }}</p>
-
-                {# เวลาอนุมัติ / เวลาแนบสลิป #}
-                {% if b.approved_at %}
-                  <p class="text-xs text-gray-400">อนุมัติเมื่อ: {{ b.approved_at|date:"d/m/Y H:i" }}</p>
-                {% endif %}
-                {% if b.slip_uploaded_at %}
-                  <p class="text-xs text-gray-400">แนบสลิปเมื่อ: {{ b.slip_uploaded_at|date:"d/m/Y H:i" }}</p>
-                {% endif %}
-
-                {# === เส้นตาย + นับถอยหลัง ฝั่งผู้เช่า === #}
-                {% if b.status == 'approved' and b.approved_at %}
-                  <div class="mt-2 text-sm">
-                    <span class="font-medium text-[#112d4e]">ต้องชำระ/แนบสลิปก่อน:</span>
-                    <time class="deadline"
-                          data-base="{{ b.approved_at|date:'c' }}"
-                          data-kind="pay">
-                      <!-- จะถูกเติมด้วย JS -->
-                    </time>
-                    <span class="countdown text-gray-500"
-                          data-base="{{ b.approved_at|date:'c' }}"
-                          data-kind="pay"></span>
-                  </div>
-                {% endif %}
-
-                {% if b.status == 'awaiting_confirmation' and b.slip_uploaded_at %}
-                  <div class="mt-2 text-sm">
-                    <span class="font-medium text-[#112d4e]">เจ้าของต้องยืนยันก่อน:</span>
-                    <time class="deadline"
-                          data-base="{{ b.slip_uploaded_at|date:'c' }}"
-                          data-kind="confirm">
-                    </time>
-                    <span class="countdown text-gray-500"
-                          data-base="{{ b.slip_uploaded_at|date:'c' }}"
-                          data-kind="confirm"></span>
-                  </div>
-                {% endif %}
-
-                {% if b.notes %}
-                  <p class="text-sm text-gray-500 mt-1">หมายเหตุ: {{ b.notes }}</p>
-                {% endif %}
-              </div>
-
-              <div class="flex flex-col gap-2 items-end">
-                {% if b.status == 'approved' %}
-                  <a href="{% url 'booking_upload_slip' b.pk %}"
-                     class="px-3 py-2 rounded-lg border text-sm hover:bg-gray-50">
-                    แนบสลิป / กรอกจำนวนเงิน
-                  </a>
-                {% endif %}
-
-                {% if b.status == 'pending' %}
-                  <a href="{% url 'booking_delete' b.pk %}"
-                     class="text-sm text-red-500 hover:underline">
-                    ❌ ยกเลิกการจอง
-                  </a>
-                {% endif %}
-              </div>
+    <section>
+        <div class="flex items-center gap-4 mb-8">
+            <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-[#3f72af]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 00-2 2z" />
+                </svg>
             </div>
-
-            {% if b.status == 'awaiting_confirmation' %}
-              <div class="mt-3 text-sm">
-                <p>ยอดที่ชำระ: {{ b.amount_paid|default:"-" }}</p>
-                {% if b.payment_slip %}
-                  <a href="{{ b.payment_slip.url }}" class="underline text-blue-600" target="_blank">ดูสลิปที่อัปโหลด</a>
-                {% endif %}
-              </div>
-            {% endif %}
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="text-gray-600">ยังไม่มีการจอง</p>
-    {% endif %}
-  </section>
-
-  <!-- ส่วนที่ 2: คนที่จองสถานที่ของฉัน -->
-  <section>
-    <h1 class="text-2xl font-bold text-[#112d4e] mb-4">🏠 คนที่จองสถานที่ของฉัน</h1>
-
-    {% if owner_bookings %}
-      <div class="grid gap-4">
-        {% for b in owner_bookings %}
-          <div class="bg-white rounded-xl shadow p-4">
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <h2 class="font-semibold text-[#112d4e]">{{ b.venue.name }}</h2>
-                <p class="text-sm text-gray-600">
-                  ผู้จอง: {{ b.user.get_full_name|default:b.user.email }}
-                </p>
-                <p class="text-sm text-gray-600">
-                  {{ b.start_date }} - {{ b.end_date }} | {{ b.start_time }} - {{ b.end_time }}
-                </p>
-                <p class="text-sm text-gray-500">สถานะ: {{ b.get_status_display }}</p>
-
-                {% if b.approved_at %}
-                  <p class="text-xs text-gray-400">อนุมัติเมื่อ: {{ b.approved_at|date:"d/m/Y H:i" }}</p>
-                {% endif %}
-                {% if b.slip_uploaded_at %}
-                  <p class="text-xs text-gray-400">แนบสลิปเมื่อ: {{ b.slip_uploaded_at|date:"d/m/Y H:i" }}</p>
-                {% endif %}
-
-                {# === เส้นตาย + นับถอยหลัง ฝั่งเจ้าของ === #}
-                {% if b.status == 'approved' and b.approved_at %}
-                  <div class="mt-2 text-sm">
-                    <span class="font-medium text-[#112d4e]">ผู้เช่าต้องชำระ/แนบสลิปก่อน:</span>
-                    <time class="deadline"
-                          data-base="{{ b.approved_at|date:'c' }}"
-                          data-kind="pay"></time>
-                    <span class="countdown text-gray-500"
-                          data-base="{{ b.approved_at|date:'c' }}"
-                          data-kind="pay"></span>
-                  </div>
-                {% endif %}
-
-                {% if b.status == 'awaiting_confirmation' and b.slip_uploaded_at %}
-                  <div class="mt-2 text-sm">
-                    <span class="font-medium text-[#112d4e]">คุณต้องยืนยันก่อน:</span>
-                    <time class="deadline"
-                          data-base="{{ b.slip_uploaded_at|date:'c' }}"
-                          data-kind="confirm"></time>
-                    <span class="countdown text-gray-500"
-                          data-base="{{ b.slip_uploaded_at|date:'c' }}"
-                          data-kind="confirm"></span>
-                  </div>
-                {% endif %}
-
-                {% if b.notes %}
-                  <p class="text-sm text-gray-500 mt-1">หมายเหตุ: {{ b.notes }}</p>
-                {% endif %}
-              </div>
-
-              <div class="flex flex-col gap-2 items-end">
-                {% if b.status == 'pending' %}
-                  <form action="{% url 'booking_approve_initial' b.pk %}" method="post">
-                    {% csrf_token %}
-                    <button class="px-3 py-2 rounded-lg bg-[#3f72af] text-white text-sm hover:opacity-90">
-                      อนุมัติ
-                    </button>
-                  </form>
-                  <a class="text-xs underline text-gray-500" href="{% url 'profile_edit' %}">
-                    เพิ่ม/แก้ไขข้อมูลบัญชี/QR
-                  </a>
-                {% endif %}
-
-                {% if b.status == 'awaiting_confirmation' %}
-                  <div class="text-right text-sm">
-                    <div>ยอดที่ผู้เช่ากรอก: {{ b.amount_paid|default:"-" }}</div>
-                    {% if b.payment_slip %}
-                      <a href="{{ b.payment_slip.url }}" class="underline text-blue-600" target="_blank">ดูสลิป</a>
-                    {% else %}
-                      <span class="text-gray-500">ยังไม่แนบสลิป</span>
-                    {% endif %}
-                  </div>
-                  <form action="{% url 'booking_confirm_payment' b.pk %}" method="post" class="mt-2">
-                    {% csrf_token %}
-                    <button class="px-3 py-2 rounded-lg bg-green-600 text-white text-sm hover:opacity-90">
-                      ยืนยันการจอง (ตรวจสลิปแล้ว)
-                    </button>
-                  </form>
-                  <form action="{% url 'booking_reject' b.pk %}" method="post">
-                    {% csrf_token %}
-                    <button class="px-3 py-2 rounded-lg bg-red-600 text-white text-sm hover:opacity-90">
-                      ปฏิเสธ
-                    </button>
-                  </form>
-                {% endif %}
-              </div>
+            <div>
+                <h1 class="text-3xl font-black text-[#112d4e] tracking-tight">MY <span class="text-[#3f72af]">BOOKINGS</span></h1>
+                <p class="text-gray-500 text-sm font-medium">ติดตามสถานะการจองสถานที่ของคุณ</p>
             </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="text-gray-600">ยังไม่มีคนจองสถานที่ของคุณ</p>
-    {% endif %}
-  </section>
+        </div>
 
+        {% if bookings %}
+            <div class="grid gap-6">
+                {% for b in bookings %}
+                    <div class="bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6 md:p-8">
+                        <div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider 
+                                        {% if b.status == 'confirmed' %}bg-green-100 text-green-600
+                                        {% elif b.status == 'pending' %}bg-yellow-100 text-yellow-600
+                                        {% elif b.status == 'approved' %}bg-blue-100 text-blue-600
+                                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                        {{ b.get_status_display }}
+                                    </span>
+                                </div>
+                                <h2 class="text-2xl font-black text-[#112d4e]">{{ b.venue.name }}</h2>
+                                
+                                <div class="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-gray-500">
+                                    <div class="flex items-center gap-1.5 font-medium">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 00-2 2z" /></svg>
+                                        {{ b.start_date }} - {{ b.end_date }}
+                                    </div>
+                                    <div class="flex items-center gap-1.5 font-medium">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        {{ b.start_time|time:"H:i" }} - {{ b.end_time|time:"H:i" }}
+                                    </div>
+                                </div>
+
+                                {# Countdown สำหรับผู้เช่า #}
+                                {% if b.status == 'approved' and b.approved_at %}
+                                    <div class="inline-flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-blue-50 rounded-2xl border border-blue-100">
+                                        <span class="text-xs font-bold text-[#3f72af] uppercase tracking-tight">🚨 Deadline ชำระเงิน:</span>
+                                        <div class="text-sm">
+                                            <time class="deadline font-bold text-[#112d4e]" data-base="{{ b.approved_at|date:'c' }}" data-kind="pay"></time>
+                                            <span class="countdown font-black" data-base="{{ b.approved_at|date:'c' }}" data-kind="pay"></span>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if b.status == 'awaiting_confirmation' and b.slip_uploaded_at %}
+                                    <div class="text-sm text-gray-400 italic">
+                                        <span class="countdown" data-base="{{ b.slip_uploaded_at|date:'c' }}" data-kind="confirm"></span>
+                                    </div>
+                                {% endif %}
+
+                                {% if b.notes %}
+                                    <p class="text-xs bg-gray-50 p-2 rounded-lg text-gray-500 border border-gray-100">📝 Note: {{ b.notes }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex flex-row md:flex-col gap-3 items-center md:items-end shrink-0">
+                                {% if b.status == 'approved' %}
+                                    <a href="{% url 'booking_upload_slip' b.pk %}"
+                                       class="px-5 py-2.5 bg-[#112d4e] text-white rounded-xl text-sm font-black shadow-lg shadow-blue-900/20 hover:bg-[#3f72af] transition-all transform hover:-translate-y-0.5">
+                                        💰 แนบสลิปชำระเงิน
+                                    </a>
+                                    <a href="{% url 'booking_delete' b.pk %}" class="text-xs font-bold text-red-400 hover:text-red-600 transition-colors uppercase tracking-widest">
+                                        Cancel
+                                    </a>
+                                {% endif %}
+
+                                {% if b.status == 'pending' %}
+                                    <a href="{% url 'booking_delete' b.pk %}" class="px-5 py-2.5 border-2 border-red-50 text-red-500 rounded-xl text-xs font-bold hover:bg-red-50 transition-all uppercase tracking-widest">
+                                        ยกเลิกการจอง
+                                    </a>
+                                {% endif %}
+                                
+                                {% if b.status == 'awaiting_confirmation' %}
+                                    <div class="bg-gray-50 p-3 rounded-2xl border border-gray-100 text-right">
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Paid Amount</p>
+                                        <p class="font-black text-[#112d4e]">{{ b.amount_paid|default:"0.00" }} ฿</p>
+                                        {% if b.payment_slip %}
+                                            <a href="{{ b.payment_slip.url }}" target="_blank" class="text-[10px] font-bold text-[#3f72af] hover:underline">VIEW SLIP</a>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[2rem] p-12 text-center">
+                <p class="text-gray-400 font-bold">คุณยังไม่มีรายการที่จองไว้</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <section>
+        <div class="flex items-center gap-4 mb-8">
+            <div class="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-3xl font-black text-[#112d4e] tracking-tight">MANAGE <span class="text-emerald-500">RENTS</span></h1>
+                <p class="text-gray-500 text-sm font-medium">จัดการรายการที่ลูกค้าจองสถานที่ของคุณเข้ามา</p>
+            </div>
+        </div>
+
+        {% if owner_bookings %}
+            <div class="grid gap-6">
+                {% for b in owner_bookings %}
+                    <div class="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 md:p-8 relative overflow-hidden">
+                        {% if b.status == 'awaiting_confirmation' %}
+                            <div class="absolute top-0 right-0 bg-yellow-400 text-white px-6 py-1 text-[10px] font-black uppercase tracking-widest rotate-0 md:rotate-12 transform md:translate-x-6 md:translate-y-4">
+                                Action Needed
+                            </div>
+                        {% endif %}
+
+                        <div class="flex flex-col md:flex-row justify-between gap-6">
+                            <div class="space-y-3">
+                                <h2 class="text-xl font-black text-[#112d4e]">{{ b.venue.name }}</h2>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 uppercase">
+                                        {{ b.user.email|slice:":1" }}
+                                    </div>
+                                    <p class="text-sm font-bold text-gray-700">
+                                        {{ b.user.get_full_name|default:b.user.email }}
+                                    </p>
+                                </div>
+                                <div class="flex flex-wrap gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                    <span>📅 {{ b.start_date }}</span>
+                                    <span>⏰ {{ b.start_time|time:"H:i" }} - {{ b.end_time|time:"H:i" }}</span>
+                                </div>
+
+                                {# Countdown สำหรับเจ้าของ #}
+                                {% if b.status == 'awaiting_confirmation' and b.slip_uploaded_at %}
+                                    <div class="inline-flex items-center gap-2 p-3 bg-red-50 rounded-2xl border border-red-100">
+                                        <span class="text-[10px] font-black text-red-600 uppercase">⏳ ต้องยืนยันภายใน:</span>
+                                        <time class="deadline text-sm font-black text-red-600" data-base="{{ b.slip_uploaded_at|date:'c' }}" data-kind="confirm"></time>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex flex-col gap-3 items-end justify-center shrink-0">
+                                {% if b.status == 'pending' %}
+                                    <form action="{% url 'booking_approve_initial' b.pk %}" method="post" class="w-full">
+                                        {% csrf_token %}
+                                        <button class="w-full px-6 py-3 rounded-2xl bg-emerald-500 text-white font-black hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition-all transform hover:-translate-y-1">
+                                            อนุมัติรับจอง
+                                        </button>
+                                    </form>
+                                    <a class="text-[10px] font-bold text-gray-400 hover:text-[#3f72af] uppercase tracking-widest" href="{% url 'profile' %}">
+                                        ตั้งค่าบัญชี/QR ของคุณ
+                                    </a>
+                                {% endif %}
+
+                                {% if b.status == 'awaiting_confirmation' %}
+                                    <div class="flex flex-col gap-2 w-full">
+                                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-2">
+                                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">ยอดที่แจ้งโอน</p>
+                                            <p class="text-lg font-black text-[#112d4e]">{{ b.amount_paid|default:"-" }} ฿</p>
+                                            {% if b.payment_slip %}
+                                                <a href="{{ b.payment_slip.url }}" target="_blank" class="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-white border border-blue-200 text-[#3f72af] text-[10px] font-black rounded-lg hover:bg-blue-50">
+                                                    📄 ดูสลิปหลักฐาน
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <form action="{% url 'booking_confirm_payment' b.pk %}" method="post" class="flex-1">
+                                                {% csrf_token %}
+                                                <button class="w-full py-3 rounded-xl bg-green-600 text-white text-xs font-black hover:bg-green-700 transition-all">
+                                                    ยืนยันยอด
+                                                </button>
+                                            </form>
+                                            <form action="{% url 'booking_reject' b.pk %}" method="post" class="flex-1">
+                                                {% csrf_token %}
+                                                <button class="w-full py-3 rounded-xl bg-red-50 text-red-600 text-xs font-black hover:bg-red-100 transition-all">
+                                                    ปฏิเสธ
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+                                <span class="text-[10px] font-bold text-gray-300 uppercase tracking-widest">
+                                    Status: {{ b.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[2rem] p-12 text-center">
+                <p class="text-gray-400 font-bold">ยังไม่มีใครจองสถานที่ของคุณ</p>
+            </div>
+        {% endif %}
+    </section>
 </div>
 
-{# ===== JS: คำนวณ deadline + นับถอยหลัง ===== #}
+{# ===== JS Logic เหมือนเดิม (เติม Tailwind นิดหน่อย) ===== #}
 <script>
 (function () {
   const root = document.getElementById('booking-page');
   if (!root) return;
 
-  // ปรับให้ตรงกับ MySQL Event
-  const PAY_HOURS = parseInt(root.dataset.payHours || '24', 10);         // หลังอนุมัติ -> เส้นตายชำระ
-  const CONFIRM_HOURS = parseInt(root.dataset.confirmHours || '12', 10); // หลังแนบสลิป -> เส้นตายยืนยัน
+  const PAY_HOURS = parseInt(root.dataset.payHours || '24', 10);
+  const CONFIRM_HOURS = parseInt(root.dataset.confirmHours || '12', 10);
 
-  // คำนวณ deadline ISO string จาก base time + hours
   function calcDeadline(baseIso, kind) {
     const base = new Date(baseIso);
     if (isNaN(base)) return null;
-    const deadline = new Date(base.getTime() + (kind === 'pay' ? PAY_HOURS : CONFIRM_HOURS) * 3600 * 1000);
-    return deadline;
+    return new Date(base.getTime() + (kind === 'pay' ? PAY_HOURS : CONFIRM_HOURS) * 3600 * 1000);
   }
 
-  // ฟอร์แมตเวลาแบบ dd/mm/yyyy HH:MM
   function fmtLocal(dt) {
     const pad = (n) => (n < 10 ? '0'+n : ''+n);
-    return `${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+    return `${pad(dt.getDate())}/${pad(dt.getMonth()+1)} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
   }
 
-  // ฟังก์ชันนับถอยหลัง
   function fmtCountdown(ms) {
-    if (ms <= 0) return 'หมดเวลาแล้ว';
+    if (ms <= 0) return 'EXPIRED';
     const s = Math.floor(ms / 1000);
-    const d = Math.floor(s / 86400);
     const h = Math.floor((s % 86400) / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = s % 60;
-    if (d > 0) return `${d} วัน ${h} ชม. ${m} นาที`;
-    if (h > 0) return `${h} ชม. ${m} นาที`;
-    if (m > 0) return `${m} นาที ${sec} วินาที`;
-    return `${sec} วินาที`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m ${sec}s`;
   }
 
   function tick() {
     const now = new Date();
-    // เติม <time.deadline>
     document.querySelectorAll('time.deadline').forEach(el => {
-      const base = el.getAttribute('data-base');
-      const kind = el.getAttribute('data-kind'); // pay | confirm
-      const deadline = calcDeadline(base, kind);
-      if (!deadline) return;
-      el.textContent = fmtLocal(deadline);
-      el.dateTime = deadline.toISOString();
+      const deadline = calcDeadline(el.getAttribute('data-base'), el.getAttribute('data-kind'));
+      if (deadline) el.textContent = fmtLocal(deadline);
     });
-    // อัปเดต <span.countdown>
     document.querySelectorAll('span.countdown').forEach(el => {
-      const base = el.getAttribute('data-base');
-      const kind = el.getAttribute('data-kind');
-      const deadline = calcDeadline(base, kind);
+      const deadline = calcDeadline(el.getAttribute('data-base'), el.getAttribute('data-kind'));
       if (!deadline) return;
       const msLeft = deadline.getTime() - now.getTime();
-      el.textContent = ` (เหลือเวลา: ${fmtCountdown(msLeft)})`;
-      el.classList.toggle('text-red-600', msLeft <= 5 * 60 * 1000); // 5 นาทีสุดท้ายเป็นสีแดง
+      el.textContent = msLeft > 0 ? ` [${fmtCountdown(msLeft)}]` : ' [Time out]';
+      if (msLeft <= 15 * 60 * 1000) { 
+        el.className = 'countdown font-black text-red-500 animate-pulse';
+      }
     });
   }
 

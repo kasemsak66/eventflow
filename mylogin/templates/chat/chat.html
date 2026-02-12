@@ -1,0 +1,137 @@
+{% extends 'home/base.html' %}
+
+{% block title %}แชทกับ {{ other_user.get_full_name|default:other_user.email }} · Eventflow{% endblock %}
+
+{% block messages_block %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-6"
+     x-data="chatApp({
+        threadId: {{ thread.id }},
+        currentUserName: '{{ request.user.get_full_name|default:request.user.email|escapejs }}',
+        currentUserId: {{ request.user.id }}
+     })">
+
+    <div class="flex items-center justify-between mb-6">
+        <a href="{% url 'venue_detail' thread.venue.pk %}" class="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#3f72af] transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            กลับหน้าสถานที่
+        </a>
+        <span class="text-[10px] font-black uppercase tracking-widest text-gray-300">Live Chat System</span>
+    </div>
+
+    <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden flex flex-col h-[700px]">
+        
+        <div class="bg-[#112d4e] p-6 text-white flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-[#3f72af] rounded-2xl flex items-center justify-center font-black text-xl shadow-inner">
+                    {{ other_user.get_full_name|default:other_user.email|slice:":1"|upper }}
+                </div>
+                <div>
+                    <h1 class="font-black leading-tight">{{ other_user.get_full_name|default:other_user.email }}</h1>
+                    <p class="text-xs text-blue-200 opacity-80">คุยเรื่อง: {{ thread.venue.name }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-green-400">Online</span>
+            </div>
+        </div>
+
+        <div x-ref="chatBox" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
+            
+            {% for msg in chat_messages %}
+                <div class="flex {% if msg.sender == user %}justify-end{% else %}justify-start{% endif %}">
+                    <div class="max-w-[80%]">
+                        <div class="{% if msg.sender == user %}bg-[#3f72af] text-white rounded-t-2xl rounded-bl-2xl shadow-blue-100{% else %}bg-white text-gray-700 rounded-t-2xl rounded-br-2xl border border-gray-100 shadow-gray-100{% endif %} px-4 py-3 shadow-md">
+                            <p class="text-sm leading-relaxed">{{ msg.content }}</p>
+                        </div>
+                        <p class="text-[10px] mt-1 text-gray-400 {% if msg.sender == user %}text-right{% endif %}">
+                            {{ msg.timestamp|date:"H:i" }}
+                        </p>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <template x-for="msg in messages" :key="msg.id">
+                <div :class="msg.isSelf ? 'flex justify-end' : 'flex justify-start'">
+                    <div class="max-w-[80%]">
+                        <div :class="msg.isSelf ? 'bg-[#3f72af] text-white rounded-t-2xl rounded-bl-2xl shadow-blue-100' : 'bg-white text-gray-700 rounded-t-2xl rounded-br-2xl border border-gray-100 shadow-gray-100'" 
+                             class="px-4 py-3 shadow-md">
+                            <p class="text-sm leading-relaxed" x-text="msg.content"></p>
+                        </div>
+                        <p :class="msg.isSelf ? 'text-right' : ''" class="text-[10px] mt-1 text-gray-400" x-text="msg.time"></p>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div class="p-6 bg-white border-t border-gray-50">
+            <div class="flex items-center gap-3 bg-gray-100 rounded-2xl px-4 py-2 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                <input x-model="message"
+                       @keydown.enter.prevent="sendMessage"
+                       type="text"
+                       class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2"
+                       placeholder="เขียนข้อความของคุณ...">
+                <button @click.prevent="sendMessage"
+                        class="bg-[#112d4e] hover:bg-[#3f72af] text-white p-2 rounded-xl transition-all shadow-lg shadow-blue-900/20 active:scale-90">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 rotate-90" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('chatApp', (config) => ({
+        threadId: config.threadId,
+        currentUserName: config.currentUserName,
+        socket: null,
+        message: '',
+        messages: [],
+
+        init() {
+            const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+            const url = `${protocol}://${window.location.host}/ws/chat/${this.threadId}/`;
+
+            this.socket = new WebSocket(url);
+
+            this.socket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                // เช็คว่าคนส่งคือเรามั้ย (ใช้ชื่อหรือ username เช็ค)
+                const isSelf = data.username === this.currentUserName;
+                
+                this.messages.push({
+                    id: Date.now(),
+                    content: data.message,
+                    isSelf: isSelf,
+                    time: data.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                });
+
+                this.$nextTick(() => { this.scrollToBottom(); });
+            };
+
+            this.socket.onopen = () => { this.scrollToBottom(); };
+        },
+
+        sendMessage() {
+            const text = this.message.trim();
+            if (!text || !this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+            this.socket.send(JSON.stringify({ message: text }));
+            this.message = '';
+        },
+
+        scrollToBottom() {
+            const chatBox = this.$refs.chatBox;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    }));
+});
+</script>
+{% endblock %}

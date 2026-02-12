@@ -1,0 +1,143 @@
+{% extends 'home/base.html' %}
+
+{% block title %}รายละเอียดกิจกรรม: {{ activity.name }} · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-10">
+
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+    <div class="flex flex-col gap-1">
+      <a href="{% url 'activity_list' %}" class="inline-flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#3f72af] transition mb-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        กลับไปหน้ารวมกิจกรรม
+      </a>
+      <h1 class="text-3xl md:text-4xl font-black text-[#112d4e] leading-tight">{{ activity.name }}</h1>
+      <div class="flex items-center gap-3 mt-2">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest
+          {% if activity.status == 'published' %}bg-emerald-100 text-emerald-700
+          {% elif activity.status == 'finished' %}bg-gray-100 text-gray-700
+          {% elif activity.status == 'cancelled' %}bg-red-100 text-red-700
+          {% elif activity.status == 'closed' %}bg-yellow-100 text-yellow-700
+          {% else %}bg-slate-100 text-slate-700{% endif %}">
+          {{ activity.get_status_display }}
+        </span>
+        <span class="text-xs text-gray-400 font-bold uppercase tracking-tighter">By {{ activity.organizer.first_name }} {{ activity.organizer.last_name }}</span>
+      </div>
+    </div>
+
+    {% if activity.organizer == user %}
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'activity_update' pk=activity.pk %}" class="bg-white border-2 border-yellow-500/20 text-yellow-600 hover:bg-yellow-500 hover:text-white font-black py-2.5 px-5 rounded-2xl transition-all flex items-center gap-2 text-sm shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+        แก้ไข
+      </a>
+      <a href="{% url 'activity_qr' pk=activity.pk %}" class="bg-emerald-500 hover:bg-emerald-600 text-white font-black py-2.5 px-5 rounded-2xl transition-all flex items-center gap-2 text-sm shadow-lg shadow-emerald-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+        QR ลงทะเบียน
+      </a>
+      <a href="{% url 'activity_delete' pk=activity.pk %}" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white p-2.5 rounded-2xl transition-all border border-red-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <div class="lg:col-span-2 space-y-8">
+      <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/40 border border-gray-50 p-8 md:p-10">
+        <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">About this activity</h2>
+        <div class="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">
+          {{ activity.description|default:"ไม่มีคำอธิบายเพิ่มเติมสำหรับกิจกรรมนี้" }}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div class="bg-white rounded-[2rem] p-6 border border-gray-100 flex items-start gap-4 shadow-sm">
+          <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-[#3f72af] shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+          <div>
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Date & Time</p>
+            <p class="font-bold text-[#112d4e]">
+              {% if activity.start_date %}{{ activity.start_date|date:"j M Y" }}{% else %}-{% endif %}
+            </p>
+            <p class="text-sm text-gray-500">
+              {% if activity.start_time %}{{ activity.start_time|time:"H:i" }} – {{ activity.end_time|time:"H:i" }} น.{% else %}ไม่ระบุเวลา{% endif %}
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-[2rem] p-6 border border-gray-100 flex items-start gap-4 shadow-sm">
+          <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          </div>
+          <div>
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Venue</p>
+            {% if activity.booking and activity.booking.venue %}
+              <a href="{% url 'venue_detail' pk=activity.booking.venue.pk %}" class="font-bold text-[#112d4e] hover:text-[#3f72af] underline decoration-blue-100 underline-offset-4 transition">
+                {{ activity.booking.venue.name }}
+              </a>
+            {% else %}
+              <p class="font-bold text-[#112d4e]">ระบุในสถานที่</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="bg-[#112d4e] rounded-[2.5rem] p-8 text-white shadow-2xl shadow-blue-900/20">
+        <h3 class="text-xs font-black uppercase tracking-[0.2em] mb-4 text-blue-200">Participation</h3>
+        <div class="flex items-end justify-between mb-6">
+            <div>
+                <p class="text-3xl font-black">{{ participants|length }}</p>
+                <p class="text-xs text-blue-300 font-bold uppercase tracking-tighter">Joined People</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xl font-black text-blue-200">{% if activity.max_participants %}{{ activity.max_participants }}{% else %}∞{% endif %}</p>
+                <p class="text-[10px] text-blue-300 font-bold uppercase tracking-tighter">Capacity</p>
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'activity_join_toggle' pk=activity.pk %}">
+          {% csrf_token %}
+          {% if is_joined %}
+            <button type="submit" class="w-full bg-white/10 hover:bg-red-500 text-white font-black py-4 rounded-2xl border border-white/20 transition-all">
+               ยกเลิกการเข้าร่วม
+            </button>
+          {% else %}
+            <button type="submit" class="w-full bg-[#3f72af] hover:bg-white hover:text-[#112d4e] text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-900/40 transition-all flex items-center justify-center gap-2">
+               ✅ เข้าร่วมกิจกรรม
+            </button>
+          {% endif %}
+        </form>
+      </div>
+
+      <div class="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+        <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">People List</h3>
+        <div class="space-y-4">
+          {% for p in participants|slice:":8" %}
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-slate-100 rounded-xl flex items-center justify-center text-[10px] font-black text-slate-400">
+                    {{ p.display_name|slice:":1"|upper }}
+                </div>
+                <span class="text-sm font-bold text-gray-700">{{ p.display_name }}</span>
+                {% if p.user and p.user.pk == activity.organizer.pk %}
+                    <span class="text-[8px] bg-blue-50 text-[#3f72af] px-2 py-0.5 rounded-md font-black uppercase">Host</span>
+                {% endif %}
+            </div>
+          {% empty %}
+            <p class="text-sm text-gray-400 text-center py-4">Be the first to join!</p>
+          {% endfor %}
+          
+          {% if participants|length > 8 %}
+            <p class="text-center text-[10px] font-black text-gray-300 uppercase mt-4">... AND {{ participants|length|add:"-8" }} OTHERS</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends 'home/base.html' %}
+
+{% block title %}
+  {% if is_update %}แก้ไขรีวิว{% else %}เขียนรีวิว{% endif %} · {{ venue.name }} · Eventflow
+{% endblock %}
+
+{% block content %}
+<style>
+  /* คุมดีไซน์ Input และ Textarea ให้พรีเมียม */
+  input[type="number"], select, textarea {
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    border: 2px solid #f1f5f9;
+    border-radius: 1.25rem;
+    font-size: 0.875rem;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    background-color: #ffffff;
+    border-color: #3f72af;
+    box-shadow: 0 0 0 4px rgba(63, 114, 175, 0.1);
+  }
+  textarea { min-height: 150px; resize: none; }
+</style>
+
+<div class="max-w-2xl mx-auto py-10 px-4">
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center justify-center w-14 h-14 bg-amber-50 rounded-2xl mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.382-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+      </svg>
+    </div>
+    <h1 class="text-3xl font-black text-[#112d4e] tracking-tight uppercase">
+      {% if is_update %}Edit Your Review{% else %}Share Your Experience{% endif %}
+    </h1>
+    <p class="text-gray-400 font-bold mt-2 uppercase tracking-widest text-xs">
+      สถานที่: <span class="text-[#3f72af]">{{ venue.name }}</span>
+    </p>
+  </div>
+
+  <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/50 border border-gray-50 p-8 md:p-10">
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+
+      <div class="group">
+        <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1 tracking-[0.15em] group-focus-within:text-[#3f72af] transition-colors">
+          คะแนนความพึงพอใจ (1-5)
+        </label>
+        {{ form.rating }}
+        {% if form.rating.errors %}
+          <p class="text-[11px] text-red-500 mt-1.5 ml-1 font-bold">{{ form.rating.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="group">
+        <label class="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1 tracking-[0.15em] group-focus-within:text-[#3f72af] transition-colors">
+          รีวิวและความคิดเห็น
+        </label>
+        {{ form.comment }}
+        {% if form.comment.errors %}
+          <p class="text-[11px] text-red-500 mt-1.5 ml-1 font-bold">{{ form.comment.errors.0 }}</p>
+        {% endif %}
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 pt-4">
+        <button type="submit" class="flex-1 bg-[#112d4e] hover:bg-[#3f72af] text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-900/10 transition-all transform hover:-translate-y-1 active:scale-[0.98]">
+          {% if is_update %}บันทึกการแก้ไข{% else %}ยืนยันการรีวิว{% endif %}
+        </button>
+        <a href="{% url 'venue_detail' venue.pk %}" class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-400 font-black py-4 rounded-2xl text-center transition-all active:scale-[0.98]">
+          ยกเลิก
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div class="mt-8 text-center px-6">
+    <p class="text-[10px] text-gray-300 font-bold uppercase tracking-[0.2em] leading-relaxed">
+      ขอบคุณที่ร่วมเป็นส่วนหนึ่งในการแบ่งปันประสบการณ์ที่ดีให้กับชุมชน Eventflow
+    </p>
+  </div>
+</div>
+{% endblock %}

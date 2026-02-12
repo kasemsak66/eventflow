@@ -3,33 +3,142 @@
 {% block title %}สถานที่ทั้งหมด · Eventflow{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
-  <div class="mb-4 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-[#112d4e]">สถานที่ทั้งหมด</h1>
-  </div>
-
-  {% if venues %}
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {% for v in venues %}
-        <a href="{% url 'venue_detail' v.pk %}" class="group block">
-          <div class="bg-white rounded-2xl shadow hover:shadow-md transition overflow-hidden">
-            <div class="aspect-[16/9] bg-gray-100">
-              {% if v.cover_image_url %}
-                <img src="{{ v.cover_image_url }}" alt="{{ v.name }}" class="w-full h-full object-cover" />
-              {% else %}
-                <div class="w-full h-full flex items-center justify-center text-gray-400">ไม่มีรูป</div>
-              {% endif %}
-            </div>
-            <div class="p-4">
-              <h3 class="font-semibold text-[#112d4e] group-hover:text-[#3f72af]">{{ v.name }}</h3>
-              <p class="text-sm text-gray-600 truncate">{{ v.address }}</p>
-            </div>
-          </div>
-        </a>
-      {% endfor %}
+<div class="max-w-7xl mx-auto mt-6 px-4">
+    
+    <div class="mb-8 border-b pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <h2 class="text-3xl font-black text-[#112D4E]">ALL <span class="text-[#3F72AF]">VENUES</span></h2>
+            <p class="text-sm text-gray-500 mt-1">ค้นหาสถานที่ที่ใช่ สำหรับกิจกรรมในสไตล์คุณ</p>
+        </div>
+        
+        <div class="text-sm font-medium text-gray-400">
+            พบสถานที่ทั้งหมด {{ venues|length }} แห่ง
+        </div>
     </div>
-  {% else %}
-    <div class="bg-white rounded-2xl shadow p-6 text-center text-gray-600">ยังไม่มีสถานที่</div>
-  {% endif %}
+
+    {% if venues %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {% for v in venues %}
+                <div class="group" x-data="favoriteButton({{ v.pk }}, {% if v.pk in favorite_venue_ids %}true{% else %}false{% endif %})">
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden relative flex flex-col h-full">
+
+                        {# ปุ่มหัวใจ overlay: ปรับให้ดูนวลและลอยเด่น #}
+                        {% if request.user.is_authenticated and request.user != v.owner %}
+                            <button type="button"
+                                    @click.stop="toggle"
+                                    class="absolute top-3 right-3 z-20 w-10 h-10 flex items-center justify-center rounded-full border transition-all duration-200 shadow-sm backdrop-blur-md"
+                                    :class="favorited 
+                                        ? 'bg-pink-50 border-pink-200 text-pink-500 scale-110' 
+                                        : 'bg-white/80 border-gray-200 text-gray-400 hover:text-pink-400 hover:scale-110'">
+                                <template x-if="!loading">
+                                    <span class="text-lg" x-text="favorited ? '❤️' : '🤍'"></span>
+                                </template>
+                                <template x-if="loading">
+                                    <div class="w-4 h-4 border-2 border-pink-200 border-t-pink-500 rounded-full animate-spin"></div>
+                                </template>
+                            </button>
+                        {% endif %}
+
+                        <a href="{% url 'venue_detail' v.pk %}" class="block flex-grow">
+                            {# รูปภาพพร้อม Badge ราคา #}
+                            <div class="aspect-[4/3] bg-gray-100 relative overflow-hidden">
+                                {% if v.cover_image_url %}
+                                    <img src="{{ v.cover_image_url }}" alt="{{ v.name }}" 
+                                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-gray-400 italic text-sm">ไม่มีรูปภาพ</div>
+                                {% endif %}
+                                
+                                <div class="absolute bottom-3 left-3">
+                                    <span class="bg-[#112D4E]/90 text-white px-3 py-1 rounded-lg text-xs font-bold backdrop-blur-sm">
+                                        ฿{{ v.price_per_day }} / วัน
+                                    </span>
+                                </div>
+                            </div>
+
+                            {# ข้อมูลสถานที่ #}
+                            <div class="p-5">
+                                <h3 class="font-bold text-[#112D4E] text-lg group-hover:text-[#3F72AF] transition-colors line-clamp-1">
+                                    {{ v.name }}
+                                </h3>
+                                <div class="flex items-start gap-1 mt-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <p class="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                                        {{ v.address }}
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+
+                        {# ส่วนท้ายของการ์ด #}
+                        <div class="px-5 pb-5 mt-auto">
+                            <a href="{% url 'venue_detail' v.pk %}" 
+                               class="block text-center w-full bg-gray-50 hover:bg-[#3F72AF] hover:text-white text-[#112D4E] font-bold py-2 rounded-xl transition duration-200 text-sm border border-gray-100">
+                                รายละเอียดพื้นที่
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-white rounded-3xl shadow-sm border border-dashed border-gray-200 p-20 text-center">
+            <div class="text-5xl mb-4">🏢</div>
+            <h3 class="text-xl font-bold text-[#112D4E]">ยังไม่มีสถานที่ในระบบ</h3>
+            <p class="text-gray-400 mt-2 text-sm">เตรียมพบกับสถานที่จัดกิจกรรมสุดเจ๋งได้เร็วๆ นี้</p>
+        </div>
+    {% endif %}
 </div>
+
+{# AlpineJS + Logic (คงเดิมตามมึงแต่ปรับแต่ง UI ข้างบนแล้ว) #}
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('favoriteButton', (venueId, initialFavorited) => ({
+            venueId: venueId,
+            favorited: initialFavorited,
+            loading: false,
+
+            async toggle() {
+                if (this.loading) return;
+                this.loading = true;
+                try {
+                    const res = await fetch(`/venues/${this.venueId}/favorite/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.favorited = data.favorited;
+                    }
+                } catch (err) {
+                    console.error('Favorite toggle error:', err);
+                } finally {
+                    this.loading = false;
+                }
+            }
+        }));
+    });
+</script>
 {% endblock %}

@@ -3,19 +3,124 @@
 {% block title %}โปรไฟล์ของฉัน{% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto bg-[#DBE2EF] shadow-md rounded-lg p-6 mt-10">
-  <h2 class="text-2xl text-center font-bold text-[#112D4E] mb-6">โปรไฟล์ของฉัน</h2>
+<div class="max-w-7xl mx-auto mt-6 px-4">
+    
+    <div class="mb-8 border-b pb-4">
+        <h2 class="text-3xl font-black text-[#112D4E]">ACCOUNT <span class="text-[#3F72AF]">PROFILE</span></h2>
+    </div>
 
-  <p class="mb-2"><strong>อีเมล:</strong> {{ user.email }}</p>
-  <p class="mb-2"><strong>ชื่อ:</strong> {{ user.first_name }}</p>
-  <p class="mb-2"><strong>นามสกุล:</strong> {{ user.last_name }}</p>
-  <p class="mb-2"><strong>เบอร์โทรศัพท์:</strong> {{ user.phone_num }}</p>
-  <p class="mb-4"><strong>วันเกิด:</strong> {{ user.dob }}</p>
-  <p class="mb-4"><strong>ธนาคาร:</strong> {{ user.bank_name }}</p>
-  <p class="mb-4"><strong>เลขที่บัญชี:</strong> {{ user.bank_account_number }}</p>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <div class="lg:col-span-4">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 sticky top-6">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-16 h-16 bg-[#3F72AF] rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                        {{ user.first_name|first|upper }}
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-[#112D4E]">{{ user.first_name }} {{ user.last_name }}</h3>
+                        <p class="text-sm text-gray-500">สมาชิกระดับ User</p>
+                    </div>
+                </div>
 
-  <a href="{% url 'profile_edit' %}" class="inline-block bg-[#3F72AF] hover:bg-[#112D4E] text-white font-bold py-2 px-4 rounded">
-    แก้ไขข้อมูล
-  </a>
+                <div class="space-y-4 text-sm">
+                    <div class="flex flex-col">
+                        <span class="text-gray-400 text-xs font-semibold uppercase">อีเมล</span>
+                        <span class="text-[#112D4E] font-medium">{{ user.email }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-gray-400 text-xs font-semibold uppercase">เบอร์โทรศัพท์</span>
+                        <span class="text-[#112D4E] font-medium">{{ user.phone_num|default:"-" }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-gray-400 text-xs font-semibold uppercase">วันเกิด</span>
+                        <span class="text-[#112D4E] font-medium">{{ user.dob|default:"-" }}</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="flex flex-col">
+                        <span class="text-gray-400 text-xs font-semibold uppercase">ธนาคาร</span>
+                        <span class="text-[#112D4E] font-medium">{{ user.bank_name|default:"-" }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-gray-400 text-xs font-semibold uppercase">เลขที่บัญชี</span>
+                        <span class="text-[#112D4E] font-medium">{{ user.bank_account_number|default:"-" }}</span>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <a href="{% url 'profile_edit' %}" 
+                       class="block text-center bg-[#112D4E] hover:bg-[#3F72AF] text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+                        แก้ไขข้อมูลส่วนตัว
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-[#112D4E] flex items-center gap-2">
+                    สถานที่ที่ฉันถูกใจ <span class="text-red-500">💖</span>
+                </h3>
+                <span class="bg-gray-100 text-gray-600 py-1 px-3 rounded-full text-xs font-bold">
+                    ทั้งหมด {{ favorites|length }} แห่ง
+                </span>
+            </div>
+
+            {% if favorites %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for fav in favorites %}
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden hover:shadow-md transition">
+                            
+                            <div class="aspect-video bg-gray-100 relative">
+                                {% if fav.venue.cover_image_url %}
+                                    <img src="{{ fav.venue.cover_image_url }}" alt="{{ fav.venue.name }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-gray-400 text-xs italic">
+                                        ไม่มีรูปภาพ
+                                    </div>
+                                {% endif %}
+                                <div class="absolute top-2 right-2">
+                                    <span class="bg-white/90 backdrop-blur text-[#112D4E] px-2 py-1 rounded-lg text-[10px] font-bold shadow-sm">
+                                        ฿{{ fav.venue.price_per_day }} / วัน
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="p-4">
+                                <h4 class="font-bold text-[#112D4E] mb-1 truncate">
+                                    <a href="{% url 'venue_detail' fav.venue.pk %}" class="hover:text-[#3F72AF]">
+                                        {{ fav.venue.name }}
+                                    </a>
+                                </h4>
+                                <p class="text-xs text-gray-500 line-clamp-2 mb-4 min-h-[32px]">
+                                    {{ fav.venue.description|default:"ไม่มีคำอธิบายเพิ่มเติมสำหรับสถานที่นี้" }}
+                                </p>
+
+                                <div class="flex items-center justify-between mt-auto pt-4 border-t">
+                                    <a href="{% url 'venue_detail' fav.venue.pk %}" class="text-sm font-bold text-[#3F72AF] hover:underline">
+                                        ดูพื้นที่
+                                    </a>
+                                    
+                                    <form method="post" action="{% url 'venue_favorite_toggle' fav.venue.pk %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-medium">
+                                            ลบจากที่ชอบ
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="bg-gray-50 rounded-2xl p-12 text-center border-2 border-dashed border-gray-200">
+                    <p class="text-gray-400">คุณยังไม่มีสถานที่ที่ถูกใจในตอนนี้</p>
+                    <a href="{% url 'venue_list' %}" class="text-[#3F72AF] text-sm font-bold hover:underline mt-2 inline-block">ไปสำรวจสถานที่กันเลย!</a>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
 </div>
 {% endblock %}

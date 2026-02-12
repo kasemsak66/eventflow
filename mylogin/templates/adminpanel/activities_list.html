@@ -1,0 +1,65 @@
+{% extends "home/base.html" %}
+{% load tz %}
+{% block title %}จัดการ Activities · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold text-[#112d4e]">Activities</h1>
+    <a href="{% url 'admin_dashboard' %}" class="text-sm text-[#3f72af] hover:underline">← กลับ Dashboard</a>
+  </div>
+
+  <div class="bg-white rounded-xl shadow overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="text-left p-3">ID</th>
+          <th class="text-left p-3">ชื่อกิจกรรม</th>
+          <th class="text-left p-3">สถานที่</th>
+          <th class="text-left p-3">Organizer</th>
+          <th class="text-left p-3">วัน/เวลา</th>
+          <th class="text-left p-3">สถานะ</th>
+          <th class="text-left p-3">วันที่สร้าง</th>
+          <th class="text-right p-3">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in activities %}
+        <tr class="border-t">
+          <td class="p-3">{{ a.activity_id }}</td>
+          <td class="p-3 font-semibold text-[#112d4e]">{{ a.name }}</td>
+          <td class="p-3 text-gray-700">{{ a.venue.name }}</td>
+          <td class="p-3 text-gray-700">{{ a.organizer.email }}</td>
+          <td class="p-3 text-gray-700">
+            {{ a.start_date }} {{ a.start_time }}
+            {% if a.end_date or a.end_time %}
+              → {{ a.end_date|default:a.start_date }} {{ a.end_time|default:"" }}
+            {% endif %}
+          </td>
+          <td class="p-3">{{ a.status }}</td>
+          <td class="p-3 text-gray-500">{{ a.created_at|localtime|date:"d M Y H:i" }}</td>
+          <td class="p-3 text-right whitespace-nowrap">
+            <a class="text-[#3f72af] hover:underline mr-3" href="{% url 'admin_activities_edit' a.pk %}">แก้ไข</a>
+            <a class="text-red-500 hover:underline" href="{% url 'admin_activities_delete' a.pk %}">ลบ</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td class="p-4 text-gray-500" colspan="7">ไม่มีข้อมูล</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+  <div class="mt-4 flex items-center justify-center gap-2 text-sm">
+    {% if page_obj.has_previous %}
+      <a class="px-3 py-1 bg-white rounded shadow" href="?page={{ page_obj.previous_page_number }}">ก่อนหน้า</a>
+    {% endif %}
+    <span class="text-gray-500">หน้า {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="px-3 py-1 bg-white rounded shadow" href="?page={{ page_obj.next_page_number }}">ถัดไป</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

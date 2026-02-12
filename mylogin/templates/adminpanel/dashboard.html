@@ -1,0 +1,23 @@
+{% extends "home/base.html" %}
+{% block title %}Admin Dashboard · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+  <h1 class="text-2xl font-bold text-[#112d4e] mb-4">Admin Panel</h1>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <a href="{% url 'admin_users_list' %}" class="bg-white rounded-xl shadow p-5 hover:shadow-md">
+      <div class="text-sm text-gray-500">จัดการ</div>
+      <div class="text-xl font-bold text-[#112d4e]">Users</div>
+    </a>
+    <a href="{% url 'admin_venues_list' %}" class="bg-white rounded-xl shadow p-5 hover:shadow-md">
+      <div class="text-sm text-gray-500">จัดการ</div>
+      <div class="text-xl font-bold text-[#112d4e]">Venues</div>
+    </a>
+    <a href="{% url 'admin_activities_list' %}" class="bg-white rounded-xl shadow p-5 hover:shadow-md">
+      <div class="text-sm text-gray-500">จัดการ</div>
+      <div class="text-xl font-bold text-[#112d4e]">Activities</div>
+    </a>
+  </div>
+</div>
+{% endblock %}

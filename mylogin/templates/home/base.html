@@ -5,93 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Eventflow{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    /* สไตล์สำหรับ Active Link แบบ Manual (ถ้าอยากใช้ในหน้าไหนค่อยใส่ class นี้) */
+    .nav-link-active {
+      color: white;
+      border-bottom: 2px solid #3f72af;
+      padding-bottom: 4px;
+    }
+  </style>
 </head>
 <body class="bg-[#f9f7f7] min-h-screen">
 
-  <!-- Navbar -->
-  <nav class="bg-[#112d4e] text-[#f9f7f7] p-4">
-    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+  <nav class="bg-[#112d4e] text-[#f9f7f7] sticky top-0 z-50 shadow-lg shadow-blue-900/10">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
 
-      <!-- Brand + Authenticated Actions -->
-      <div class="text-xl font-bold flex items-center gap-4">
-        <span>EVENTFLOW</span>
+      <div class="flex items-center gap-12">
+        <a href="/" class="text-2xl font-black tracking-tighter hover:text-[#3f72af] transition-colors">
+          EVENTFLOW
+        </a>
 
         {% if user.is_authenticated %}
-        <div class="flex items-center gap-2">
-
-          <!-- รายการสถานที่ -->
-          <a href="{% url 'venue_list' %}"
-             class="bg-[#3f72af] hover:bg-[#2f5d97] text-white px-3 py-1 rounded transition">
-            สถานที่ทั้งหมด
-          </a>
-
-          <!-- สถานที่ของฉัน -->
-          <a href="{% url 'my_venues' %}"
-             class="bg-[#0b5f82] hover:bg-[#094d6c] text-white px-3 py-1 rounded transition">
-            สถานที่ของฉัน
-          </a>
-
-          <!-- การจอง -->
-          <a href="{% url 'booking_list' %}"
-             class="bg-[#ffc107] hover:bg-[#e0a800] text-black px-3 py-1 rounded transition">
-            การจอง
-          </a>
-
-          <!-- เพิ่มสถานที่ -->
-          <a href="{% url 'venue_create' %}"
-             class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded transition">
-            เพิ่มสถานที่
-          </a>
-
-          <a href="{% url 'venue_map' %}"
-             class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded transition">
-            แมพ
-          </a>
+        <div class="hidden lg:flex items-center gap-7 text-[13px] font-bold uppercase tracking-wider text-blue-100/70">
+          <a href="{% url 'venue_list' %}" class="hover:text-white transition">สถานที่ทั้งหมด</a>
+          <a href="{% url 'my_venues' %}" class="hover:text-white transition">สถานที่ของฉัน</a>
+          <a href="{% url 'booking_list' %}" class="hover:text-white transition">การจอง</a>
+          <a href="{% url 'venue_map' %}" class="hover:text-white transition">แมพ</a>
+          <a href="{% url 'activity_list' %}" class="hover:text-white transition">กิจกรรม</a>
+          <a href="{% url 'chat_history' %}" class="hover:text-white transition">แชท</a>
         </div>
+        {% endif %}
+        
+
+        {% if user.is_authenticated and user.is_staff %}
+        <div class="hidden lg:flex items-center gap-7 text-[13px] font-bold uppercase tracking-wider text-blue-100/70">
+        <a href="{% url 'admin_dashboard' %}" class="hover:text-white transition">Admin Dashboard</a>
         {% endif %}
       </div>
 
-      <!-- Right-side Buttons -->
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center gap-3">
         {% if user.is_authenticated %}
-          <a href="{% url 'profile' %}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
-            โปรไฟล์
-          </a>
-          <form method="post" action="{% url 'logout' %}">
+          <div class="flex items-center gap-2 bg-blue-900/30 p-1.5 pl-4 rounded-2xl border border-blue-800/50">
+            <span class="text-xs font-bold text-blue-200 hidden md:inline">{{ user.first_name }}</span>
+            <a href="{% url 'profile' %}" class="bg-[#3f72af] hover:bg-blue-400 text-white p-2 rounded-xl transition shadow-lg shadow-blue-400/20">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            </a>
+          </div>
+          <form method="post" action="{% url 'logout' %}" class="inline">
             {% csrf_token %}
-            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
-              ออกจากระบบ
+            <button type="submit" class="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white px-4 py-2 rounded-xl text-xs font-black transition-all uppercase tracking-widest border border-red-500/20">
+              Logout
             </button>
           </form>
         {% else %}
-          <a href="{% url 'login' %}" class="hover:text-[#3f72af]">เข้าสู่ระบบ</a>
-          <a href="{% url 'register' %}" class="hover:text-[#3f72af]">สมัครสมาชิก</a>
+          <a href="{% url 'login' %}" class="text-sm font-bold px-4 py-2 hover:bg-blue-900/50 rounded-xl transition">เข้าสู่ระบบ</a>
+          <a href="{% url 'register' %}" class="bg-[#3f72af] hover:bg-[#2d5480] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 transition transform active:scale-95">
+            สมัครสมาชิก
+          </a>
         {% endif %}
       </div>
 
     </div>
   </nav>
 
-  <!-- Flash messages -->
-  <div class="p-4 max-w-lg mx-auto">
+  {% block messages_block %}
+  <div class="fixed bottom-6 right-6 z-[100] max-w-sm w-full space-y-3">
     {% if messages %}
       {% for message in messages %}
         <div 
-          class="rounded p-2 mb-4 text-center 
-                 {% if 'success' in message.tags %} text-green-700 bg-green-200
-                 {% elif 'error' in message.tags %} text-red-700 bg-red-200
-                 {% elif 'warning' in message.tags %} text-yellow-700 bg-yellow-200
-                 {% else %} text-blue-700 bg-blue-200 {% endif %}">
-          {{ message }}
+          class="rounded-2xl p-4 shadow-2xl flex items-center gap-3 border animate-bounce-short
+                 {% if 'success' in message.tags %} text-emerald-700 bg-emerald-50 border-emerald-100
+                 {% elif 'error' in message.tags %} text-red-700 bg-red-50 border-red-100
+                 {% elif 'warning' in message.tags %} text-amber-700 bg-amber-50 border-amber-100
+                 {% else %} text-blue-700 bg-blue-50 border-blue-100 {% endif %}">
+          <div class="shrink-0">
+             {% if 'success' in message.tags %} ✅ {% elif 'error' in message.tags %} ❌ {% else %} ℹ️ {% endif %}
+          </div>
+          <p class="text-sm font-bold">{{ message }}</p>
         </div>
       {% endfor %}
     {% endif %}
   </div>
+  {% endblock %}
 
-  <!-- Main Content -->
-  <div class="p-6">
+  <main class="max-w-7xl mx-auto py-8 px-6">
     {% block content %}{% endblock %}
-  </div>
+  </main>
+
+  <style>
+    @keyframes bounce-short {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .animate-bounce-short { animation: bounce-short 2s ease-in-out infinite; }
+  </style>
 
 </body>
 </html>

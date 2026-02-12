@@ -25,21 +25,28 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne', 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'mylogin',
     'widget_tweaks',
-    'multiselectfield'
-    
+    'multiselectfield',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'channels',
 ]
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',    
+    'django.contrib.auth.backends.ModelBackend',   
+    'allauth.account.auth_backends.AuthenticationBackend', 
 ]
 
 
@@ -58,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'eventflow.urls'
@@ -79,6 +87,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'eventflow.wsgi.application'
 
+ASGI_APPLICATION = 'eventflow.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -146,3 +161,24 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 USE_TZ = True
 TIME_ZONE = 'Asia/Bangkok'
+
+SITE_ID = 1
+
+LOGIN_REDIRECT_URL = '/'  # ล็อกอินสำเร็จ ไปหน้าแรก
+LOGOUT_REDIRECT_URL = '/' 
+
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# บอก allauth ว่าไม่ต้องหา field username ใน User Model
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+
+# บอกว่าการล็อกอินไม่ต้องใช้ username (ใช้ email แทน)
+ACCOUNT_USERNAME_REQUIRED = False
+
+# บอกว่าต้องใช้อีเมลในการยืนยันตัวตน
+ACCOUNT_EMAIL_REQUIRED = True
+
+# บอกว่าวิธีการล็อกอินหลักคือ Email
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'

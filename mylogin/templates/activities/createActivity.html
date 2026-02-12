@@ -1,0 +1,114 @@
+{% extends 'home/base.html' %}
+
+{% block title %}
+  {% if activity %}แก้ไขกิจกรรม{% else %}สร้างกิจกรรมใหม่{% endif %} · Eventflow
+{% endblock %}
+
+{% block content %}
+<style>
+  /* สไตล์ Input ให้มนสวยและพรีเมียม */
+  input[type="text"], input[type="date"], input[type="time"], input[type="number"], textarea, select {
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    border: 2px solid #f1f5f9;
+    border-radius: 1.25rem;
+    font-size: 0.875rem;
+    background-color: #f8fafc;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+  }
+  input:focus, textarea:focus {
+    background-color: #ffffff;
+    border-color: #3f72af;
+    box-shadow: 0 0 0 4px rgba(63, 114, 175, 0.1);
+  }
+</style>
+
+<div class="max-w-2xl mx-auto px-4 py-12">
+  
+  <div class="flex items-center justify-between mb-8">
+    <a href="{% url 'activity_list' %}" class="inline-flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#112d4e] transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+      ย้อนกลับ
+    </a>
+    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300">Activity Editor</span>
+  </div>
+
+  <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/40 border border-gray-50 overflow-hidden">
+    
+    <div class="bg-[#112d4e] p-8 md:p-10 text-white">
+        <h1 class="text-3xl font-black tracking-tight mb-2">
+            {% if activity %}EDIT <span class="text-[#3f72af]">EVENT</span>{% else %}NEW <span class="text-emerald-400">EVENT</span>{% endif %}
+        </h1>
+        <p class="text-blue-200/60 text-sm font-medium">
+            {% if activity %}แก้ไขรายละเอียดกิจกรรม "{{ activity.name }}"{% else %}กรอกรายละเอียดเพื่อเริ่มสร้างกิจกรรมใหม่ของคุณ{% endif %}
+        </p>
+    </div>
+
+    <div class="p-8 md:p-10">
+      <form method="post" class="space-y-8">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium animate-pulse">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="grid grid-cols-2 gap-x-6 gap-y-6">
+          {% for field in form %}
+            <div class="{% if field.name == 'name' or field.name == 'description' or field.name == 'location' %}col-span-2{% else %}col-span-2 sm:col-span-1{% endif %} group">
+              <label for="{{ field.id_for_label }}" class="block text-[10px] font-black text-gray-400 uppercase mb-2 ml-1 tracking-[0.15em] group-focus-within:text-[#3f72af] transition-colors">
+                {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+              </label>
+              
+              <div class="relative">
+                {{ field }}
+              </div>
+
+              {% if field.help_text %}
+                <p class="mt-2 text-[11px] text-gray-400 ml-1 font-medium">{{ field.help_text }}</p>
+              {% endif %}
+
+              {% for error in field.errors %}
+                <p class="text-[11px] text-red-500 mt-2 font-bold flex items-center gap-1 ml-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                    {{ error }}
+                </p>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="pt-6">
+          <button type="submit"
+                  class="w-full bg-[#112d4e] hover:bg-[#3f72af] text-white font-black py-4.5 rounded-2xl shadow-xl shadow-blue-900/10 transition-all transform hover:-translate-y-1 active:scale-[0.98] text-lg flex items-center justify-center gap-2">
+            {% if activity %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                บันทึกการเปลี่ยนแปลง
+            {% else %}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                ยืนยันการสร้างกิจกรรม
+            {% endif %}
+          </button>
+          
+          <a href="{% url 'activity_list' %}" class="block text-center mt-6 text-sm font-bold text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest">
+            Cancel & Discard
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="mt-10 p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+    <div class="flex gap-4 items-start">
+        <div class="bg-white p-2 rounded-xl text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        <p class="text-xs text-gray-400 leading-relaxed">
+            <b class="text-gray-600 uppercase">Pro Tip:</b> การระบุรายละเอียดกิจกรรมที่ชัดเจนและจำนวนผู้เข้าร่วมที่เหมาะสม จะช่วยให้กิจกรรมของคุณน่าสนใจและมีคนเข้าร่วมได้ง่ายขึ้น
+        </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

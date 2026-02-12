@@ -1,0 +1,138 @@
+{% extends "home/base.html" %}
+{% block title %}วิเคราะห์กิจกรรมของฉัน · Eventflow{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-8" x-data="activityAnalytics()">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-black text-[#112d4e] tracking-tight uppercase">Activity <span class="text-[#3f72af]">Insights</span></h1>
+            <p class="text-gray-500 font-medium mt-1">วิเคราะห์ประสิทธิภาพกิจกรรมและการมีส่วนร่วม</p>
+        </div>
+        <a href="{% url 'activity_list' %}" class="bg-gray-100 hover:bg-gray-200 text-[#112d4e] px-6 py-3 rounded-2xl font-black transition-all">Back to Hub</a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-50">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Activities (7D)</p>
+            <h3 class="text-3xl font-black text-[#112d4e] mt-2">{{ activities_7d }}</h3>
+            <p class="mt-2 text-sm font-bold {% if activities_delta >= 0 %}text-emerald-500{% else %}text-red-500{% endif %}">
+                {% if activities_delta > 0 %}+{% endif %}{{ activities_delta }} ({{ activities_pct }}%)
+            </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-50">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">New Joins (7D)</p>
+            <h3 class="text-3xl font-black text-[#3f72af] mt-2">{{ joined_7d }}</h3>
+            <p class="mt-2 text-sm font-bold {% if joined_delta >= 0 %}text-emerald-500{% else %}text-red-500{% endif %}">
+                {% if joined_delta > 0 %}+{% endif %}{{ joined_delta }} ({{ joined_pct }}%)
+            </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-50">
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avg Joins</p>
+            <h3 class="text-3xl font-black text-[#112d4e] mt-2">{{ avg_joined_per_activity }}</h3>
+            <p class="mt-2 text-sm font-bold text-gray-400 uppercase">Per Activity</p>
+        </div>
+
+        <div class="bg-[#112d4e] p-6 rounded-[2rem] shadow-xl text-white">
+            <p class="text-[10px] font-black text-blue-300 uppercase tracking-widest">Success Rate</p>
+            <h3 class="text-3xl font-black mt-2">{{ completion_rate }}%</h3>
+            <p class="mt-2 text-sm font-medium text-blue-200 uppercase tracking-tighter">Finished: {{ finished_count }} / {{ total_activities }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50">
+        <div class="flex items-center gap-2 mb-6">
+            <span class="w-1.5 h-6 bg-purple-500 rounded-full"></span>
+            <h2 class="text-xl font-black text-[#112d4e] uppercase">Participation Trend (Last 7 Days)</h2>
+        </div>
+        <div class="h-[350px]">
+            <canvas x-ref="canvas"></canvas>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 lg:col-span-1">
+            <h3 class="text-lg font-black text-[#112d4e] mb-6 uppercase">Participant Mix</h3>
+            <div class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-bold text-gray-500">Members</span>
+                    <span class="text-lg font-black text-emerald-500">{{ member_joined_total }}</span>
+                </div>
+                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-emerald-500 h-full" style="width: {{ member_joined_total }}%"></div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-bold text-gray-500">Guests</span>
+                    <span class="text-lg font-black text-blue-500">{{ guest_joined_total }}</span>
+                </div>
+                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-blue-500 h-full" style="width: {{ guest_joined_total }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50 lg:col-span-2">
+            <h3 class="text-lg font-black text-[#112d4e] mb-6 uppercase">🔥 Top Performing Activities</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-[10px] font-black text-gray-400 uppercase border-b">
+                            <th class="pb-4">Activity Name</th>
+                            <th class="pb-4">Venue</th>
+                            <th class="pb-4 text-right">Joins</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for a in top_activities %}
+                        <tr class="group">
+                            <td class="py-4 text-sm font-black text-[#112d4e] group-hover:text-blue-600 transition-colors">{{ a.name }}</td>
+                            <td class="py-4 text-sm font-bold text-gray-500">{{ a.booking.venue.name }}</td>
+                            <td class="py-4 text-right">
+                                <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-black">{{ a.joined_count }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function activityAnalytics() {
+        return {
+            labels: {{ chart_labels|safe }},
+            data: {{ chart_data|safe }},
+            init() {
+                new Chart(this.$refs.canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: this.labels,
+                        datasets: [{
+                            label: 'New Joins',
+                            data: this.data,
+                            backgroundColor: '#3f72af',
+                            borderRadius: 12,
+                            hoverBackgroundColor: '#112d4e',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+    }
+</script>
+{% endblock %}

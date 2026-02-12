@@ -1,0 +1,53 @@
+{% extends 'home/base.html' %}
+
+{% block title %}ลบรีวิว · {{ review.venue.name }} · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto py-16 px-4">
+  
+  <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-red-100/50 border border-red-50 overflow-hidden">
+    
+    <div class="bg-red-50 p-8 text-center border-b border-red-100">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-sm mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-black text-red-600 tracking-tight uppercase">Delete Review?</h1>
+      <p class="text-red-400 text-xs font-bold mt-1 uppercase tracking-widest">การดำเนินการนี้ไม่สามารถย้อนคืนได้</p>
+    </div>
+
+    <div class="p-8 md:p-10">
+      <p class="text-gray-500 text-center mb-6">
+        คุณแน่ใจใช่ไหมที่จะลบรีวิวของสถานที่ <br>
+        <span class="text-[#112d4e] font-black underline decoration-[#3f72af] decoration-2">{{ review.venue.name }}</span>
+      </p>
+
+      <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100 mb-8">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">รีวิวของคุณ</span>
+          <div class="flex text-amber-400">
+            <span class="text-sm font-black mr-1 text-[#112d4e]">{{ review.rating }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+          </div>
+        </div>
+        <p class="text-sm text-gray-600 italic leading-relaxed whitespace-pre-line">"{{ review.comment }}"</p>
+      </div>
+
+      <form method="post" class="flex flex-col sm:flex-row gap-3">
+        {% csrf_token %}
+        <button type="submit" class="flex-[2] bg-red-500 hover:bg-red-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-red-200 transition-all transform hover:-translate-y-1 active:scale-[0.98]">
+          Confirm Delete
+        </button>
+        <a href="{% url 'venue_detail' review.venue.pk %}" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-500 font-black py-4 rounded-2xl text-center transition-all active:scale-[0.98]">
+          Cancel
+        </a>
+      </form>
+    </div>
+  </div>
+
+  <p class="mt-8 text-center text-[10px] text-gray-300 font-bold uppercase tracking-[0.2em]">
+    Eventflow Security Protocol · Authorized Actions Only
+  </p>
+</div>
+{% endblock %}

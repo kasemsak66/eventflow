@@ -1,0 +1,66 @@
+@startuml
+hide footbox
+autonumber
+
+actor User as "User (Browser)"
+participant View as "ReviewUpdateView"
+participant Form as "ReviewForm"
+participant Review as "Review"
+participant Venue as "Venue"
+
+User -> View : GET /review/update/<pk>/
+activate View
+
+View -> Review : get_object()
+activate Review
+Review -->> View : review instance
+deactivate Review
+
+View -> Venue : review.venue
+activate Venue
+Venue -->> View : venue instance
+deactivate Venue
+
+View -> Form : ReviewForm(instance=review)
+activate Form
+Form -->> View : form instance
+deactivate Form
+
+View -->> User : render("review/createReview.html")
+deactivate View
+
+User -> View : POST /review/update/<pk>/ (data)
+activate View
+
+View -> Review : get_object()
+activate Review
+Review -->> View : review instance
+deactivate Review
+
+View -> Form : ReviewForm(POST, instance=review)
+activate Form
+Form -->> View : form instance
+deactivate Form
+
+View -> Form : is_valid()
+activate Form
+Form -->> View : True
+deactivate Form
+
+View -> Form : save()
+activate Form
+Form -> Review : update instance
+activate Review
+Review -->> Form : saved
+deactivate Review
+Form -->> View : review
+deactivate Form
+
+View -->> User : redirect('venue_detail')
+deactivate View
+
+destroy View
+destroy Form
+destroy Review
+destroy Venue
+@enduml

@@ -1,0 +1,76 @@
+{% extends 'home/base.html' %}
+
+{% block title %}QR ลงทะเบียน: {{ activity.name }} · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-12">
+  
+  <div class="mb-8">
+    <a href="{% url 'activity_detail' pk=activity.pk %}" class="inline-flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#112d4e] transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+      กลับไปยังรายละเอียดกิจกรรม
+    </a>
+  </div>
+
+  <div class="bg-white rounded-[3rem] shadow-2xl shadow-gray-200/50 border border-gray-50 overflow-hidden text-center">
+    
+    <div class="bg-[#112d4e] py-8 px-6 text-white">
+        <div class="w-16 h-16 bg-[#3f72af] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+        </div>
+        <h1 class="text-2xl font-black tracking-tight uppercase mb-1">Self Registration</h1>
+        <p class="text-blue-200/60 text-xs font-bold uppercase tracking-[0.2em]">Scan to join this activity</p>
+    </div>
+
+    <div class="p-10 md:p-12">
+        <div class="mb-8">
+            <h2 class="text-xl font-black text-[#112d4e] mb-2">{{ activity.name }}</h2>
+            {% if activity.booking %}
+                <p class="text-sm font-bold text-gray-400 flex items-center justify-center gap-1 uppercase tracking-tighter">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
+                    {{ activity.booking.venue.name }}
+                </p>
+            {% endif %}
+        </div>
+
+        <div class="relative inline-block group">
+            <div class="absolute -inset-4 bg-gradient-to-tr from-[#3f72af] to-emerald-400 rounded-[2.5rem] opacity-10 blur-xl group-hover:opacity-20 transition duration-500"></div>
+            <div class="relative bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-50">
+                <img src="{% url 'activity_qr_image' activity.pk %}"
+                     alt="Registration QR Code"
+                     class="w-64 h-64 md:w-80 md:h-80 object-contain rounded-xl" />
+            </div>
+        </div>
+
+        <div class="mt-10 space-y-4">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <a href="{% url 'activity_qr_image' activity.pk %}"
+                   download="QR_{{ activity.name|slugify }}.png"
+                   class="w-full sm:w-auto bg-[#112d4e] hover:bg-[#3f72af] text-white font-black py-4 px-8 rounded-2xl shadow-xl shadow-blue-900/10 transition-all transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    ดาวน์โหลดรูป QR
+                </a>
+                <a href="{{ register_url }}" target="_blank"
+                   class="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-[#112d4e] font-black py-4 px-8 rounded-2xl transition-all flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                    เปิดลิงก์
+                </a>
+            </div>
+            
+            <div class="pt-4 px-6">
+                <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-2 text-center">Registration URL</p>
+                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 break-all text-xs font-mono text-gray-500">
+                    {{ register_url }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-slate-50 py-6 border-t border-gray-50">
+        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tight italic">
+            * ให้ผู้เข้าร่วมใช้แอปพลิเคชัน Line หรือ Camera ในการสแกนเพื่อลงทะเบียน
+        </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

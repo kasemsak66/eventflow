@@ -3,10 +3,6 @@
 {% block title %}แนบสลิปการชำระเงิน{% endblock %}
 
 {% block content %}
-{# 
-  data-required: ยอดที่ต้องชำระ (ใช้ช่วย validate ฝั่ง JS)
-  data-approved-ts: Unix timestamp (วินาที) ของเวลาที่ "อนุมัติให้ชำระ"
-#}
 <div class="max-w-xl mx-auto bg-white shadow p-6 rounded-xl space-y-5" id="upload-slip"
      data-required="{{ booking.total_price|floatformat:2 }}"
      data-approved-ts="{% if booking.approved_at %}{{ booking.approved_at|date:'U' }}{% endif %}">

@@ -1,0 +1,141 @@
+{% extends "home/base.html" %}
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<div class="max-w-7xl mx-auto p-6 space-y-8" x-data="analyticsComponent()">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-[#112d4e]">OWNER DASHBOARD</h1>
+            <p class="text-gray-500 font-medium">ภาพรวมสถิติการจองและรายได้รอบ 7 วันล่าสุด</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-50">
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Bookings (7D)</div>
+            <div class="text-4xl font-black text-[#112d4e] mt-2">{{ bookings_7d }}</div>
+            <div class="mt-4 flex items-center gap-2">
+                <span class="px-2 py-1 rounded-lg text-xs font-bold {% if bookings_delta >= 0 %}bg-emerald-100 text-emerald-600{% else %}bg-red-100 text-red-500{% endif %}">
+                    {% if bookings_delta > 0 %}+{% endif %}{{ bookings_delta }} ({{ bookings_pct }}%)
+                </span>
+                <span class="text-[10px] text-gray-400 font-bold uppercase">vs prev 7 days</span>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-50">
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Revenue (7D)</div>
+            <div class="text-4xl font-black text-emerald-600 mt-2">฿{{ revenue_7d|floatformat:0 }}</div>
+            <div class="mt-4 flex items-center gap-2">
+                <span class="px-2 py-1 rounded-lg text-xs font-bold {% if revenue_delta >= 0 %}bg-emerald-100 text-emerald-600{% else %}bg-red-100 text-red-500{% endif %}">
+                    {% if revenue_delta > 0 %}+{% endif %}฿{{ revenue_delta|floatformat:0 }}
+                </span>
+                <span class="text-[10px] text-gray-400 font-bold uppercase">Estimated</span>
+            </div>
+        </div>
+
+        <div class="bg-[#112d4e] p-6 rounded-[2rem] shadow-xl text-white">
+            <div class="text-xs font-bold text-blue-300 uppercase tracking-wider">Total Performance</div>
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                    <div class="text-xl font-black">{{ total_bookings }}</div>
+                    <div class="text-[9px] text-blue-300 font-bold uppercase">Total Bookings</div>
+                </div>
+                <div>
+                    <div class="text-xl font-black">{{ total_joined }}</div>
+                    <div class="text-[9px] text-blue-300 font-bold uppercase">Total Participants</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-black text-[#112d4e] uppercase flex items-center gap-2">
+                <span class="w-1.5 h-6 bg-blue-500 rounded-full"></span> Booking Trends
+            </h2>
+        </div>
+        <div class="h-[350px]">
+            <canvas x-ref="canvas"></canvas>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50">
+            <h3 class="text-lg font-black text-[#112d4e] mb-6 uppercase">Bookings by Status</h3>
+            <div class="space-y-4">
+                {% for row in bookings_by_status %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-bold text-gray-500 capitalize">{{ row.status }}</span>
+                    <div class="flex items-center gap-4 flex-1 mx-4">
+                        <div class="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-[#3f72af]" style="width: {{ row.count }}0%"></div>
+                        </div>
+                        <span class="text-sm font-black text-[#112d4e]">{{ row.count }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-50">
+            <h3 class="text-lg font-black text-[#112d4e] mb-6 uppercase">Top Venues</h3>
+            <div class="space-y-4">
+                {% for v in top_venues %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                    <span class="font-bold text-sm text-[#112d4e]">{{ v.venue__name }}</span>
+                    <span class="text-xs font-black px-3 py-1 bg-white rounded-full text-blue-600 shadow-sm">{{ v.count }} Bookings</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function analyticsComponent() {
+        return {
+            labels: {{ chart_labels|safe }},
+            chartData: {{ chart_data|safe }},
+            init() {
+                this.renderChart();
+            },
+            renderChart() {
+                new Chart(this.$refs.canvas, {
+                    type: 'line',
+                    data: {
+                        labels: this.labels,
+                        datasets: [{
+                            data: this.chartData,
+                            borderColor: '#3f72af',
+                            backgroundColor: 'rgba(63, 114, 175, 0.1)',
+                            borderWidth: 4,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#ffffff',
+                            pointBorderColor: '#3f72af',
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { 
+                                beginAtZero: true, 
+                                grid: { color: '#f8fafc' },
+                                ticks: { stepSize: 1, font: { weight: 'bold' } }
+                            },
+                            x: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
+                        }
+                    }
+                });
+            }
+        }
+    }
+</script>
+{% endblock %}

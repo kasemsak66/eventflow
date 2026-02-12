@@ -1,0 +1,249 @@
+{% extends "home/base.html" %}
+{% block title %}ค้นหาสถานที่ที่เหมาะสม · Eventflow{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+
+  <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+    <div class="bg-[#112d4e] p-6 text-white">
+      <h1 class="text-3xl font-extrabold tracking-tight">ค้นหาสถานที่ที่เหมาะสม</h1>
+      <p class="text-blue-100 mt-2 opacity-90">
+        ระบุเงื่อนไขที่คุณต้องการ แล้วเราจะช่วยเฟ้นหาสถานที่ที่ดีที่สุดให้คุณ
+      </p>
+    </div>
+
+    <form method="get" class="p-6 md:p-8 space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+        
+        <div class="md:col-span-3">
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">จังหวัด</label>
+          <input name="province" value="{{ province }}"
+                 class="w-full border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#3f72af] focus:border-transparent transition-all"
+                 placeholder="เช่น เชียงใหม่">
+        </div>
+
+        <div class="md:col-span-3">
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">อำเภอ</label>
+          <input name="district" value="{{ district }}"
+                 class="w-full border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#3f72af] focus:border-transparent transition-all"
+                 placeholder="เช่น เมือง">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">งบ/วัน (ต่ำสุด)</label>
+          <input type="number" name="min_price" value="{{ min_price }}"
+                 class="w-full border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#3f72af]" min="0">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">งบ/วัน (สูงสุด)</label>
+          <input type="number" name="max_price" value="{{ max_price }}"
+                 class="w-full border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#3f72af]" min="0">
+        </div>
+
+        <div class="md:col-span-2 flex gap-2">
+          <button class="flex-1 bg-[#3f72af] hover:bg-[#112d4e] text-white px-4 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-blue-100 transition-all transform hover:-translate-y-0.5">
+            🔍 ค้นหา
+          </button>
+          <a href="{% url 'landing' %}"
+             class="px-4 py-3 rounded-2xl border border-gray-200 text-sm font-medium text-gray-500 hover:bg-gray-50 transition-all">
+            ล้าง
+          </a>
+        </div>
+
+        <div class="md:col-span-3">
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ความจุขั้นต่ำ (คน)</label>
+          <input type="number" name="min_capacity" value="{{ min_capacity }}"
+                 class="w-full border-gray-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#3f72af]" min="1">
+        </div>
+
+        <div class="md:col-span-5 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-blue-600">📍</span>
+              <label class="text-sm font-bold text-[#112d4e]">ค้นหาใกล้ตัวฉัน</label>
+            </div>
+            <input type="checkbox" name="near" value="1" {% if near == "1" %}checked{% endif %} class="w-5 h-5 text-[#3f72af] rounded-full focus:ring-0">
+          </div>
+
+          <div class="flex gap-3 items-center">
+            <span class="text-xs font-medium text-blue-700">รัศมี:</span>
+            <select name="radius_km" class="bg-white border-none rounded-lg px-3 py-1 text-xs font-bold text-blue-800 shadow-sm">
+              <option value="3"  {% if radius_km == "3" %}selected{% endif %}>3 กม.</option>
+              <option value="5"  {% if radius_km == "5" %}selected{% endif %}>5 กม.</option>
+              <option value="10" {% if radius_km == "10" %}selected{% endif %}>10 กม.</option>
+            </select>
+            <button type="button" id="get-location-btn"
+                    class="ml-auto text-xs bg-white text-blue-600 border border-blue-200 px-4 py-1.5 rounded-xl font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+              อัปเดตพิกัด
+            </button>
+          </div>
+          <input type="hidden" name="lat" id="lat" value="{{ lat }}">
+          <input type="hidden" name="lng" id="lng" value="{{ lng }}">
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-gray-50">
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">สิ่งอำนวยความสะดวก</label>
+        <div class="flex flex-wrap gap-3">
+          {% for a in amenity_fields %}
+            <label class="relative cursor-pointer group">
+              <input type="checkbox" name="{{ a }}" value="1" {% if selected_amenities.a %}checked{% endif %} class="peer sr-only">
+              <div class="px-5 py-2.5 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-600 transition-all 
+                          peer-checked:bg-[#3f72af] peer-checked:text-white peer-checked:border-[#3f72af] 
+                          group-hover:border-blue-300">
+                {{ a|capfirst }}
+              </div>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+    
+    <div class="lg:col-span-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-black text-[#112d4e]">ผลการค้นหา</h2>
+        <span class="bg-gray-100 text-gray-600 px-4 py-1 rounded-full text-xs font-bold">
+          พบ {{ venues|length }} แห่ง
+        </span>
+      </div>
+
+      {% if venues %}
+        <div class="grid sm:grid-cols-2 gap-6">
+          {% for v in venues %}
+            <a href="{% url 'venue_detail' v.pk %}" class="group">
+              <div class="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 h-full flex flex-col">
+                <div class="aspect-video relative overflow-hidden">
+                  {% if v.cover_image_url %}
+                    <img src="{{ v.cover_image_url }}" alt="{{ v.name }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  {% else %}
+                    <div class="w-full h-full flex items-center justify-center bg-gray-50 text-gray-400 font-medium">No Image</div>
+                  {% endif %}
+                  <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold text-[#112d4e] shadow-sm">
+                    ฿{{ v.price_per_day }} / วัน
+                  </div>
+                </div>
+                <div class="p-5 flex-grow">
+                  <h3 class="font-bold text-lg text-[#112d4e] mb-1 group-hover:text-[#3f72af] transition-colors line-clamp-1">{{ v.name }}</h3>
+                  <div class="flex items-center text-gray-500 text-xs mb-4">
+                    <span class="mr-1">📍</span> {{ v.address|truncatechars:40 }}
+                  </div>
+                  <div class="flex items-center justify-between pt-4 border-t border-gray-50">
+                    <div class="flex items-center gap-1">
+                      <span class="text-xs font-bold text-gray-400">ความจุ</span>
+                      <span class="text-sm font-bold text-[#3f72af]">{{ v.max_capacity|default:"-" }}</span>
+                    </div>
+                    <span class="text-xs font-black text-gray-300 uppercase tracking-widest group-hover:text-[#3f72af]">View Detail →</span>
+                  </div>
+                </div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+
+        <div class="mt-12 flex items-center justify-center gap-4">
+          {% if page_obj.has_previous %}
+            <a class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 hover:bg-[#112d4e] hover:text-white transition-all" 
+               href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{k}}={{v|urlencode}}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">←</a>
+          {% endif %}
+          <div class="text-sm font-bold">หน้า {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
+          {% if page_obj.has_next %}
+            <a class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-200 hover:bg-[#112d4e] hover:text-white transition-all" 
+               href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{k}}={{v|urlencode}}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">→</a>
+          {% endif %}
+        </div>
+
+      {% else %}
+        <div class="bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 p-12 text-center">
+          <div class="text-4xl mb-4">🔍</div>
+          <h3 class="text-lg font-bold text-gray-800">ไม่พบสถานที่ที่ต้องการ</h3>
+          <p class="text-gray-500 text-sm mt-1">ลองเปลี่ยนเงื่อนไขหรือขยายรัศมีการค้นหาดูนะครับ</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="lg:col-span-4 space-y-10">
+      
+      <section>
+        <h2 class="text-xl font-black text-[#112d4e] mb-5 flex items-center gap-2">
+          <span class="text-orange-500">🔥</span> ยอดนิยมสูงสุด
+        </h2>
+        <div class="space-y-4">
+          {% for v in hot_by_completed_booking|slice:":3" %}
+            <a href="{% url 'venue_detail' v.pk %}" class="flex gap-4 p-3 bg-white rounded-2xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all group">
+              <div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                <img src="{{ v.cover_image_url|default:'https://via.placeholder.com/150' }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+              </div>
+              <div class="flex flex-col justify-center">
+                <h4 class="font-bold text-sm text-[#112d4e] line-clamp-1 group-hover:text-[#3f72af]">{{ v.name }}</h4>
+                <p class="text-[10px] text-gray-500 mt-1">จองสำเร็จ {{ v.completed_booking_count }} ครั้ง</p>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-black text-[#112d4e] mb-5 flex items-center gap-2">
+          <span class="text-yellow-500">⭐</span> รีวิวดีเยี่ยม
+        </h2>
+        <div class="space-y-4">
+          {% for v in hot_by_review|slice:":3" %}
+            <a href="{% url 'venue_detail' v.pk %}" class="flex gap-4 p-3 bg-white rounded-2xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all group">
+              <div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                <img src="{{ v.cover_image_url|default:'https://via.placeholder.com/150' }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+              </div>
+              <div class="flex flex-col justify-center">
+                <h4 class="font-bold text-sm text-[#112d4e] line-clamp-1 group-hover:text-[#3f72af]">{{ v.name }}</h4>
+                <div class="flex items-center gap-1 mt-1">
+                  <span class="text-xs font-bold text-yellow-600">{{ v.avg_rating|default:"0"|floatformat:1 }}</span>
+                  <span class="text-[10px] text-gray-400">({{ v.review_count }} รีวิว)</span>
+                </div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const btn = document.getElementById("get-location-btn");
+  const latEl = document.getElementById("lat");
+  const lngEl = document.getElementById("lng");
+
+  if(!btn) return;
+
+  btn.addEventListener("click", function(){
+    if(!navigator.geolocation){
+      alert("เบราว์เซอร์นี้ไม่รองรับการใช้ตำแหน่ง");
+      return;
+    }
+    btn.innerText = "กำลังระบุตำแหน่ง...";
+    btn.classList.add("animate-pulse");
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        latEl.value = pos.coords.latitude;
+        lngEl.value = pos.coords.longitude;
+        btn.innerText = "บันทึกพิกัดแล้ว ✅";
+        btn.classList.remove("animate-pulse");
+        btn.classList.replace("text-blue-600", "text-green-600");
+      },
+      (err) => {
+        alert("ไม่สามารถดึงตำแหน่งได้: " + err.message);
+        btn.innerText = "ลองอีกครั้ง";
+        btn.classList.remove("animate-pulse");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+})();
+</script>
+{% endblock %}
