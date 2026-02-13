@@ -47,7 +47,28 @@
                     </div>
                 </div>
 
+                <!-- ปุ่มจัดการบัญชี -->
                 <div class="mt-8">
+                    {% if user.bank_qr %}
+                        <a href="{% url 'edit_owner_bank' %}" 
+                           class="block text-center bg-[#112D4E] hover:bg-[#3F72AF] text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+                            แก้ไขข้อมูลบัญชี/QR
+                        </a>
+                    {% elif user.bank_name and user.bank_account_number %}
+                        <a href="{% url 'edit_owner_bank' %}" 
+                           class="block text-center bg-[#112D4E] hover:bg-[#3F72AF] text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+                            แก้ไขข้อมูลบัญชี/QR
+                        </a>
+                    {% else %}
+                        <a href="{% url 'add_owner_bank' %}" 
+                           class="block text-center bg-green-700 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+                            เพิ่มข้อมูลบัญชี/QR
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- ปุ่มแก้ไขข้อมูลส่วนตัว -->
+                <div class="mt-4">
                     <a href="{% url 'profile_edit' %}" 
                        class="block text-center bg-[#112D4E] hover:bg-[#3F72AF] text-white font-bold py-3 px-4 rounded-xl transition duration-200">
                         แก้ไขข้อมูลส่วนตัว

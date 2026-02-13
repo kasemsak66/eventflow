@@ -1,66 +1,110 @@
 @startuml
+top to bottom direction
+skinparam ranksep 30
+skinparam nodesep 15
 hide footbox
-autonumber
 
-actor User as "User (Browser)"
-participant View as "ReviewUpdateView"
-participant Form as "ReviewForm"
-participant Review as "Review"
-participant Venue as "Venue"
+actor "ผู้ใช้งานทั่วไป" as Guest
+actor "สมาชิก" as Member
+actor "ผู้ดูแลระบบ" as Admin
 
-User -> View : GET /review/update/<pk>/
-activate View
+rectangle "ระบบจัดการ" {
 
-View -> Review : get_object()
-activate Review
-Review -->> View : review instance
-deactivate Review
+    usecase Login as "เข้าสู่ระบบ"
 
-View -> Venue : review.venue
-activate Venue
-Venue -->> View : venue instance
-deactivate Venue
+    usecase SearchVenue as "ค้นหาและดูข้อมูลสถานที่"
+    usecase RegisterMember as "สมัครสมาชิก"
+    usecase ViewMap as "ดูรายการสถานที่จากแผนที่"
+    usecase RegisterGuest as "ลงทะเบียนกิจกรรมแบบไม่เข้าสู่ระบบ"
 
-View -> Form : ReviewForm(instance=review)
-activate Form
-Form -->> View : form instance
-deactivate Form
+    usecase EditProfile as "แก้ไขข้อมูลส่วนตัว"
+    usecase ManageVenue as "เพิ่ม/แก้ไข/ลบข้อมูลสถานที่"
+    usecase CreateBooking as "เพิ่มข้อมูลการจองสถานที่"
+    usecase ApproveBooking as "อนุมัติการจองสถานที่"
+    usecase NotifyPayment as "แจ้งชำระเงินการจองสถานที่"
+    usecase ConfirmPayment as "ยืนยันการชำระเงินการจองสถานที่"
+    usecase RejectBooking as "ปฏิเสธคำขอจองสถานที่"
+    usecase CancelBooking as "ยกเลิกการจองสถานที่"
+    usecase BankInfo as "เพิ่มและแก้ไขข้อมูลบัญชีธนาคาร"
 
-View -->> User : render("review/createReview.html")
-deactivate View
+    usecase ManageActivity as "เพิ่ม/แก้ไข/ลบข้อมูลกิจกรรม"
+    usecase ViewActivity as "ดูรายละเอียดกิจกรรม"
+    usecase RegisterMemberAct as "ลงทะเบียนกิจกรรม"
+    usecase ManageReview as "เพิ่ม/แก้ไข/ลบข้อมูลการรีวิว"
+    usecase ManageFav as "เพิ่ม/ลบข้อมูลสถานที่ที่ถูกใจ"
+    usecase SendMsg as "ส่งข้อความหาสมาชิก"
+    usecase ChatHist as "ดูประวัติการสนทนา"
 
-User -> View : POST /review/update/<pk>/ (data)
-activate View
+    usecase BookList as "ดูรายการการจอง"
+    usecase ActList as "ดูรายการกิจกรรม"
+    usecase ActAnal as "ดูข้อมูลวิเคราะห์กิจกรรมของตนเอง"
+    usecase VenueAnal as "ดูข้อมูลวิเคราะห์สถานที่ของตนเอง"
 
-View -> Review : get_object()
-activate Review
-Review -->> View : review instance
-deactivate Review
+    usecase AdmUser as "จัดการข้อมูลสมาชิก"
+    usecase AdmVenue as "จัดการข้อมูลสถานที่"
+    usecase AdmAct as "จัดการข้อมูลกิจกรรม"
+}
 
-View -> Form : ReviewForm(POST, instance=review)
-activate Form
-Form -->> View : form instance
-deactivate Form
+' ===== บังคับเรียงแนวตั้ง =====
 
-View -> Form : is_valid()
-activate Form
-Form -->> View : True
-deactivate Form
+Login -down- SearchVenue
+SearchVenue -down- RegisterMember
+RegisterMember -down- ViewMap
+ViewMap -down- RegisterGuest
+RegisterGuest -down- EditProfile
+EditProfile -down- ManageVenue
+ManageVenue -down- CreateBooking
+CreateBooking -down- ApproveBooking
+ApproveBooking -down- NotifyPayment
+NotifyPayment -down- ConfirmPayment
+ConfirmPayment -down- RejectBooking
+RejectBooking -down- CancelBooking
+CancelBooking -down- BankInfo
+BankInfo -down- ManageActivity
+ManageActivity -down- ViewActivity
+ViewActivity -down- RegisterMemberAct
+RegisterMemberAct -down- ManageReview
+ManageReview -down- ManageFav
+ManageFav -down- SendMsg
+SendMsg -down- ChatHist
+ChatHist -down- BookList
+BookList -down- ActList
+ActList -down- ActAnal
+ActAnal -down- VenueAnal
+VenueAnal -down- AdmUser
+AdmUser -down- AdmVenue
+AdmVenue -down- AdmAct
 
-View -> Form : save()
-activate Form
-Form -> Review : update instance
-activate Review
-Review -->> Form : saved
-deactivate Review
-Form -->> View : review
-deactivate Form
+' ===== Actor Connections =====
 
-View -->> User : redirect('venue_detail')
-deactivate View
+Guest -- SearchVenue
+Guest -- RegisterMember
+Guest -- ViewMap
+Guest -- RegisterGuest
 
-destroy View
-destroy Form
-destroy Review
-destroy Venue
+Member -- EditProfile
+Member -- ManageVenue
+Member -- CreateBooking
+Member -- ApproveBooking
+Member -- NotifyPayment
+Member -- ConfirmPayment
+Member -- RejectBooking
+Member -- CancelBooking
+Member -- BankInfo
+Member -- ManageActivity
+Member -- ViewActivity
+Member -- RegisterMemberAct
+Member -- ManageReview
+Member -- ManageFav
+Member -- SendMsg
+Member -- ChatHist
+Member -- BookList
+Member -- ActList
+Member -- ActAnal
+Member -- VenueAnal
+
+Admin -- AdmUser
+Admin -- AdmVenue
+Admin -- AdmAct
+
 @enduml

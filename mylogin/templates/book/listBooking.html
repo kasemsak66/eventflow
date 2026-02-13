@@ -75,13 +75,13 @@
                                        class="px-5 py-2.5 bg-[#112d4e] text-white rounded-xl text-sm font-black shadow-lg shadow-blue-900/20 hover:bg-[#3f72af] transition-all transform hover:-translate-y-0.5">
                                         💰 แนบสลิปชำระเงิน
                                     </a>
-                                    <a href="{% url 'booking_delete' b.pk %}" class="text-xs font-bold text-red-400 hover:text-red-600 transition-colors uppercase tracking-widest">
+                                    <a href="{% url 'booking_cancel' b.pk %}" class="text-xs font-bold text-red-400 hover:text-red-600 transition-colors uppercase tracking-widest">
                                         Cancel
                                     </a>
                                 {% endif %}
 
                                 {% if b.status == 'pending' %}
-                                    <a href="{% url 'booking_delete' b.pk %}" class="px-5 py-2.5 border-2 border-red-50 text-red-500 rounded-xl text-xs font-bold hover:bg-red-50 transition-all uppercase tracking-widest">
+                                    <a href="{% url 'booking_cancel' b.pk %}" class="px-5 py-2.5 border-2 border-red-50 text-red-500 rounded-xl text-xs font-bold hover:bg-red-50 transition-all uppercase tracking-widest">
                                         ยกเลิกการจอง
                                     </a>
                                 {% endif %}
@@ -163,7 +163,7 @@
                                             อนุมัติรับจอง
                                         </button>
                                     </form>
-                                    <a class="text-[10px] font-bold text-gray-400 hover:text-[#3f72af] uppercase tracking-widest" href="{% url 'profile' %}">
+                                    <a class="text-[10px] font-bold text-gray-400 hover:text-[#3f72af] uppercase tracking-widest" href="{% url 'edit_owner_bank' %}">
                                         ตั้งค่าบัญชี/QR ของคุณ
                                     </a>
                                 {% endif %}

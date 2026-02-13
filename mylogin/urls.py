@@ -32,6 +32,7 @@ urlpatterns = [
     path('venues/my/', views.MyVenueListView.as_view(), name='my_venues'),
     path("venues/map/", VenueMapView.as_view(),name="venue_map"),
     path('venues/<int:venue_id>/favorite/',FavoriteToggleView.as_view(),name='venue_favorite_toggle'),
+    path("owner/venue-analytics/", OwnerVenueAnalyticsView.as_view(), name="owner_venue_analytics"),
     
     path('bookings/', BookingListView.as_view(), name='booking_list'),
     path('bookings/create/', BookingCreateView.as_view(), name='booking_create'),
@@ -40,6 +41,8 @@ urlpatterns = [
     path('bookings/<int:pk>/confirm-payment/',views.booking_confirm_payment,name='booking_confirm_payment'),
     path('bookings/<int:pk>/reject/',views.booking_reject,name='booking_reject'),
     path('bookings/<int:pk>/cancel/',views.booking_cancel,name='booking_cancel'),
+    path('owner/bank/add/', views.add_owner_bank, name='add_owner_bank'),
+    path('owner/bank/edit/', views.owner_bank_edit, name='edit_owner_bank'),
     
     path('activities/', ActivityListView.as_view(), name='activity_list'),
     path('activities/create/', ActivityCreateView.as_view(), name='activity_create'),
@@ -62,18 +65,13 @@ urlpatterns = [
     
     path('favorites/',FavoriteListView.as_view(),name='favorite_list'),
     
-    path("owner/venue-analytics/", OwnerVenueAnalyticsView.as_view(), name="owner_venue_analytics"),
-    
     path("adminpanel/", AdminDashboardView.as_view(), name="admin_dashboard"),
-
     path("adminpanel/users/", AdminUserListView.as_view(), name="admin_users_list"),
     path("adminpanel/users/<int:pk>/edit/", AdminUserUpdateView.as_view(), name="admin_users_edit"),
     path("adminpanel/users/<int:pk>/delete/", AdminUserDeleteView.as_view(), name="admin_users_delete"),
-
     path("adminpanel/venues/", AdminVenueListView.as_view(), name="admin_venues_list"),
     path("adminpanel/venues/<int:pk>/edit/", AdminVenueUpdateView.as_view(), name="admin_venues_edit"),
     path("adminpanel/venues/<int:pk>/delete/", AdminVenueDeleteView.as_view(), name="admin_venues_delete"),
-
     path("adminpanel/activities/", AdminActivityListView.as_view(), name="admin_activities_list"),
     path("adminpanel/activities/<int:pk>/edit/", AdminActivityUpdateView.as_view(), name="admin_activities_edit"),
     path("adminpanel/activities/<int:pk>/delete/", AdminActivityDeleteView.as_view(), name="admin_activities_delete"),

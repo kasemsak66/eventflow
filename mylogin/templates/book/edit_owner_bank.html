@@ -1,0 +1,61 @@
+{% extends 'home/base.html' %}
+
+{% block title %}แก้ไขข้อมูลบัญชี/QR{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto bg-white shadow p-6 rounded-xl space-y-5">
+  <h1 class="text-2xl font-bold text-[#112d4e]">แก้ไขข้อมูลบัญชี/QR</h1>
+  <p class="text-sm text-gray-600">
+    คุณสามารถแก้ไข <b>ชื่อธนาคาร</b> <b>เลขบัญชี/พร้อมเพย์</b>
+    หรืออัปโหลด <b>QR ใหม่</b> ได้ที่นี่
+  </p>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <!-- ชื่อธนาคาร -->
+    <div>
+      <label class="block text-sm font-medium">ชื่อธนาคาร</label>
+      {{ form.bank_name }}
+      {{ form.bank_name.errors }}
+    </div>
+
+    <!-- เลขบัญชี -->
+    <div>
+      <label class="block text-sm font-medium">เลขบัญชี/พร้อมเพย์</label>
+      {{ form.bank_account_number }}
+      {{ form.bank_account_number.errors }}
+    </div>
+
+    <!-- QR -->
+    <div>
+      <label class="block text-sm font-medium">QR ปัจจุบัน</label>
+      {% if user.bank_qr %}
+        <div class="mb-2">
+          <img src="{{ user.bank_qr.url }}" 
+               class="w-40 rounded-lg border shadow">
+        </div>
+      {% else %}
+        <p class="text-gray-400 text-sm">ยังไม่มี QR</p>
+      {% endif %}
+
+      <label class="block text-sm font-medium mt-2">อัปโหลด QR ใหม่</label>
+      {{ form.bank_qr }}
+      {{ form.bank_qr.errors }}
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <button type="submit"
+        class="bg-[#3f72af] hover:bg-[#2c5282] text-white px-4 py-2 rounded-lg">
+        บันทึกการแก้ไข
+      </button>
+
+      <a href="{% url 'booking_list' %}"
+         class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+        ยกเลิก
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

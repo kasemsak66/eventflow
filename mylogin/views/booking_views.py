@@ -118,38 +118,25 @@ def _is_owner(user, booking: Booking) -> bool:
 # ========================================
 @login_required(login_url='login')
 def booking_approve_initial(request, pk):
-    """
-    GET:
-      - แสดงหน้าให้เจ้าของเพิ่มข้อมูลบัญชี (ถ้ายังไม่มี)
-      - หรืออนุมัติคำขอจอง (ถ้าข้อมูลบัญชีครบแล้ว)
-    POST:
-      - เมื่อกรอกฟอร์ม OwnerBankForm แล้วกดบันทึก → เซฟข้อมูลธนาคาร แล้ว redirect ให้อนุมัติอีกรอบ
-    """
     booking = get_object_or_404(Booking, pk=pk)
 
-    # เฉพาะเจ้าของสถานที่เท่านั้นที่อนุมัติได้
+    # ตรวจสอบสิทธิ์
     if not _is_owner(request.user, booking):
         return HttpResponseForbidden("คุณไม่มีสิทธิ์ดำเนินการนี้")
 
-    # ถ้าเจ้าของยังไม่มีข้อมูลบัญชี/QR ให้บังคับกรอกก่อน
-    if not (request.user.bank_qr or (request.user.bank_name and request.user.bank_account_number)):
+    # ตรวจสอบว่ามีข้อมูลบัญชีหรือยัง
+    if not (
+        request.user.bank_qr or 
+        (request.user.bank_name and request.user.bank_account_number)
+    ):
         messages.warning(request, "กรุณาเพิ่มข้อมูลบัญชี/QR ก่อนอนุมัติ")
+        return redirect('add_owner_bank')
 
-        if request.method == "POST":
-            form = OwnerBankForm(request.POST, request.FILES, instance=request.user)
-            if form.is_valid():
-                form.save()
-                messages.success(request, "บันทึกข้อมูลการรับชำระแล้ว ลองอนุมัติอีกครั้ง")
-                return redirect('booking_approve_initial', pk=booking.pk)
-        else:
-            form = OwnerBankForm(instance=request.user)
-
-        return render(request, 'book/owner_bank_required.html', {"form": form, "booking": booking})
-
-    # กรณีข้อมูลบัญชีครบแล้ว → อนุมัติคำขอจอง
+    # อนุมัติการจอง
     booking.status = 'approved'
     booking.approved_at = timezone.now()
     booking.save(update_fields=['status', 'approved_at'])
+
     messages.success(request, "อนุมัติคำขอแล้ว — ผู้เช่าจะเห็นรายละเอียดการชำระเงิน")
     return redirect('booking_list')
 
@@ -298,3 +285,44 @@ def booking_cancel(request, pk):
     booking.save(update_fields=['status'])
     messages.info(request, "ยกเลิกแล้ว")
     return redirect('booking_list')
+
+@login_required(login_url='login')
+def add_owner_bank(request):
+
+    # ถ้ามีข้อมูลอยู่แล้ว ไม่ให้เพิ่มซ้ำ
+    if request.user.bank_qr or (
+        request.user.bank_name and request.user.bank_account_number
+    ):
+        messages.info(request, "คุณมีข้อมูลบัญชีอยู่แล้ว สามารถแก้ไขได้")
+        return redirect('owner_bank_edit')
+
+    if request.method == "POST":
+        form = OwnerBankForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "บันทึกข้อมูลบัญชีเรียบร้อย")
+            return redirect('booking_list')
+    else:
+        form = OwnerBankForm(instance=request.user)
+
+    return render(request, 'book/add_owner_bank.html', {
+        "form": form,
+        "mode": "add"
+    })
+
+@login_required(login_url='login')
+def owner_bank_edit(request):
+
+    if request.method == "POST":
+        form = OwnerBankForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "แก้ไขข้อมูลบัญชีเรียบร้อย")
+            return redirect('booking_list')
+    else:
+        form = OwnerBankForm(instance=request.user)
+
+    return render(request, 'book/edit_owner_bank.html', {
+        "form": form,
+        "mode": "edit"
+    })
