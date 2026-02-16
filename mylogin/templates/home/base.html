@@ -31,10 +31,16 @@
         <div class="hidden lg:flex items-center gap-7 text-[13px] font-bold uppercase tracking-wider text-blue-100/70">
           <a href="{% url 'venue_list' %}" class="hover:text-white transition">สถานที่ทั้งหมด</a>
           <a href="{% url 'my_venues' %}" class="hover:text-white transition">สถานที่ของฉัน</a>
-          <a href="{% url 'booking_list' %}" class="hover:text-white transition">การจอง</a>
           <a href="{% url 'venue_map' %}" class="hover:text-white transition">แมพ</a>
+          <a href="{% url 'booking_list' %}" class="hover:text-white transition">การจอง</a>
           <a href="{% url 'activity_list' %}" class="hover:text-white transition">กิจกรรม</a>
           <a href="{% url 'chat_history' %}" class="hover:text-white transition">แชท</a>
+        </div>
+
+        {% else %}
+        <div class="hidden lg:flex items-center gap-7 text-[13px] font-bold uppercase tracking-wider text-blue-100/70">
+          <a href="{% url 'venue_list' %}" class="hover:text-white transition">สถานที่ทั้งหมด</a>
+          <a href="{% url 'venue_map' %}" class="hover:text-white transition">แมพ</a>
         </div>
         {% endif %}
         

@@ -1,110 +1,29 @@
 @startuml
-top to bottom direction
-skinparam ranksep 30
-skinparam nodesep 15
-hide footbox
+autonumber
+skinparam Style strictuml
 
-actor "ผู้ใช้งานทั่วไป" as Guest
-actor "สมาชิก" as Member
-actor "ผู้ดูแลระบบ" as Admin
+participant "User Request" as U
+participant "FavoriteListView" as V
+participant "Favorite" as M
 
-rectangle "ระบบจัดการ" {
+U -> V: GET /favorites/
+activate V
 
-    usecase Login as "เข้าสู่ระบบ"
+V -> M: Favorite.objects.filter(user=self.request.user)
+activate M
+M --> V: return filtered favorites
+deactivate M
 
-    usecase SearchVenue as "ค้นหาและดูข้อมูลสถานที่"
-    usecase RegisterMember as "สมัครสมาชิก"
-    usecase ViewMap as "ดูรายการสถานที่จากแผนที่"
-    usecase RegisterGuest as "ลงทะเบียนกิจกรรมแบบไม่เข้าสู่ระบบ"
+V -> M: Favorite.objects.select_related('venue')
+activate M
+M --> V: return favorites with venue
+deactivate M
 
-    usecase EditProfile as "แก้ไขข้อมูลส่วนตัว"
-    usecase ManageVenue as "เพิ่ม/แก้ไข/ลบข้อมูลสถานที่"
-    usecase CreateBooking as "เพิ่มข้อมูลการจองสถานที่"
-    usecase ApproveBooking as "อนุมัติการจองสถานที่"
-    usecase NotifyPayment as "แจ้งชำระเงินการจองสถานที่"
-    usecase ConfirmPayment as "ยืนยันการชำระเงินการจองสถานที่"
-    usecase RejectBooking as "ปฏิเสธคำขอจองสถานที่"
-    usecase CancelBooking as "ยกเลิกการจองสถานที่"
-    usecase BankInfo as "เพิ่มและแก้ไขข้อมูลบัญชีธนาคาร"
+V -> M: Favorite.objects.order_by('-created_at')
+activate M
+M --> V: return sorted favorites
+deactivate M
 
-    usecase ManageActivity as "เพิ่ม/แก้ไข/ลบข้อมูลกิจกรรม"
-    usecase ViewActivity as "ดูรายละเอียดกิจกรรม"
-    usecase RegisterMemberAct as "ลงทะเบียนกิจกรรม"
-    usecase ManageReview as "เพิ่ม/แก้ไข/ลบข้อมูลการรีวิว"
-    usecase ManageFav as "เพิ่ม/ลบข้อมูลสถานที่ที่ถูกใจ"
-    usecase SendMsg as "ส่งข้อความหาสมาชิก"
-    usecase ChatHist as "ดูประวัติการสนทนา"
-
-    usecase BookList as "ดูรายการการจอง"
-    usecase ActList as "ดูรายการกิจกรรม"
-    usecase ActAnal as "ดูข้อมูลวิเคราะห์กิจกรรมของตนเอง"
-    usecase VenueAnal as "ดูข้อมูลวิเคราะห์สถานที่ของตนเอง"
-
-    usecase AdmUser as "จัดการข้อมูลสมาชิก"
-    usecase AdmVenue as "จัดการข้อมูลสถานที่"
-    usecase AdmAct as "จัดการข้อมูลกิจกรรม"
-}
-
-' ===== บังคับเรียงแนวตั้ง =====
-
-Login -down- SearchVenue
-SearchVenue -down- RegisterMember
-RegisterMember -down- ViewMap
-ViewMap -down- RegisterGuest
-RegisterGuest -down- EditProfile
-EditProfile -down- ManageVenue
-ManageVenue -down- CreateBooking
-CreateBooking -down- ApproveBooking
-ApproveBooking -down- NotifyPayment
-NotifyPayment -down- ConfirmPayment
-ConfirmPayment -down- RejectBooking
-RejectBooking -down- CancelBooking
-CancelBooking -down- BankInfo
-BankInfo -down- ManageActivity
-ManageActivity -down- ViewActivity
-ViewActivity -down- RegisterMemberAct
-RegisterMemberAct -down- ManageReview
-ManageReview -down- ManageFav
-ManageFav -down- SendMsg
-SendMsg -down- ChatHist
-ChatHist -down- BookList
-BookList -down- ActList
-ActList -down- ActAnal
-ActAnal -down- VenueAnal
-VenueAnal -down- AdmUser
-AdmUser -down- AdmVenue
-AdmVenue -down- AdmAct
-
-' ===== Actor Connections =====
-
-Guest -- SearchVenue
-Guest -- RegisterMember
-Guest -- ViewMap
-Guest -- RegisterGuest
-
-Member -- EditProfile
-Member -- ManageVenue
-Member -- CreateBooking
-Member -- ApproveBooking
-Member -- NotifyPayment
-Member -- ConfirmPayment
-Member -- RejectBooking
-Member -- CancelBooking
-Member -- BankInfo
-Member -- ManageActivity
-Member -- ViewActivity
-Member -- RegisterMemberAct
-Member -- ManageReview
-Member -- ManageFav
-Member -- SendMsg
-Member -- ChatHist
-Member -- BookList
-Member -- ActList
-Member -- ActAnal
-Member -- VenueAnal
-
-Admin -- AdmUser
-Admin -- AdmVenue
-Admin -- AdmAct
-
+V --> U: return response
+deactivate V
 @enduml
